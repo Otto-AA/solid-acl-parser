@@ -1,4 +1,5 @@
 import prefixes from './prefixes'
+import { setEquals } from './setUtils'
 
 const permissionLinks = {
   READ: `${prefixes.acl}Read`,
@@ -12,32 +13,63 @@ export default class Permissions {
    * @param  {...string} permissions
    */
   constructor (...permissions) {
+    /** @type {Set<string>} */
     this.set = new Set()
-    this.add(permissions)
+    this.add(...permissions)
   }
 
   /**
    * @param  {...string} permissions
    */
   add (...permissions) {
-    this._assertValidPermissions(permissions)
+    this._assertValidPermissions(...permissions)
     permissions.forEach(perm => this.set.add(perm))
   }
 
   /**
-   * @param  {string} permission
+   * @param  {...string} permissions
    * @returns {boolean}
    */
-  has (permission) {
-    return this.set.has(permission)
+  has (...permissions) {
+    return permissions.every(permission => this.set.has(permission))
   }
 
   /**
-   * @param  {string} permission
+   * @param  {...string} permissions
    * @returns {boolean} return false if the element didn't exist
    */
-  delete (permission) {
-    return this.set.delete(permission)
+  delete (...permissions) {
+    permissions.forEach(permission => this.set.delete(permission))
+  }
+
+  /**
+   * @param {Permissions} other
+   */
+  merge (other) {
+    this.add(...other.set)
+  }
+
+  /**
+   * @param {Permissions} other
+   * @returns {boolean}
+   */
+  equals (other) {
+    return setEquals(this.set, other.set)
+  }
+
+  /**
+   * @param {Permissions} other
+   * @returns {boolean}
+   */
+  includes (other) {
+    return this.has(...other.set)
+  }
+
+  /**
+   * @returns {Permissions}
+   */
+  clone () {
+    return new Permissions(...this.set)
   }
 
   /**
@@ -45,14 +77,30 @@ export default class Permissions {
    */
   _assertValidPermissions (...permissions) {
     // Sanity check to only accept valid permissions
-    if (permissions.some(perm => !permissionLinks.hasOwnProperty(perm))) {
-      console.group()
-      console.error('Please only provide valid permissions')
-      console.error('Got', permissions)
-      console.error('Expected one or more of', Object.values(permissionLinks))
-      console.groupEnd()
-      throw new Error('Invalid permissions: ' + JSON.stringify(permissions))
+    const validPermissions = Object.values(permissionLinks)
+    for (const perm of permissions) {
+      if (!validPermissions.includes(perm)) {
+        let msg = `Invalid permission: ${perm}\n`
+        msg += `Please use one of: ${JSON.stringify(validPermissions)}`
+        throw new Error(msg)
+      }
     }
+  }
+
+  /**
+   * @param {Permissions|string|string[]} val
+   */
+  static from (val) { // TODO: Test
+    if (val instanceof Permissions) {
+      return val.clone()
+    }
+    if (typeof val === 'string') {
+      return new Permissions(val)
+    }
+    if (Array.isArray(val)) {
+      return new Permissions(...val)
+    }
+    throw new Error('Invalid arguments', val)
   }
 
   static get READ () { return permissionLinks.READ }
