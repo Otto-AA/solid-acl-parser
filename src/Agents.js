@@ -174,4 +174,22 @@ export default class Agents {
     }
     throw new Error('Invalid args', val)
   }
+
+  /**
+   * @returns {Agents}
+   */
+  static get PUBLIC () {
+    const agents = new Agents()
+    agents.addPublic()
+    return agents
+  }
+
+  /**
+   * @returns {Agents}
+   */
+  static get AUTHENTICATED () {
+    const agents = new Agents()
+    agents.addAuthenticated()
+    return agents
+  }
 }

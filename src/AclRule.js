@@ -5,10 +5,12 @@ export default class AclRule {
   /**
    * @param {Permissions} permissions
    * @param {Agents} agents
+   * @param {string} [subjectId]
    */
-  constructor (permissions, agents) {
+  constructor (permissions, agents, subjectId) {
     this.permissions = Permissions.from(permissions)
     this.agents = Agents.from(agents)
+    this.subjectId = subjectId
   }
 
   /**
@@ -16,7 +18,7 @@ export default class AclRule {
    */
   merge (other) {
     if (!this.canBeMerged(other)) {
-      throw new Error('Cannot merge two rules with different permissions')
+      throw new Error('Cannot merge two rules with different permissions or subjectId')
     }
     this.agents.merge(other.agents)
   }
@@ -29,7 +31,8 @@ export default class AclRule {
   canBeMerged (other) {
     // Require the permissions to be the same
     // TODO: Also require the scope to be the same
-    return this.permissions.equals(other.permissions)
+    return this.subjectId === other.subjectId &&
+      this.permissions.equals(other.permissions)      
   }
 
   /**
@@ -56,7 +59,8 @@ export default class AclRule {
    * @returns {boolean}
    */
   equals (other) {
-    return this.permissions.equals(other.permissions) &&
+    return this.subjectId === other.subjectId &&
+      this.permissions.equals(other.permissions) &&
       this.agents.equals(other.agents)
   }
 
@@ -65,18 +69,20 @@ export default class AclRule {
    * @returns {boolean}
    */
   includes (other) {
-    return this.permissions.includes(other.permissions) &&
+    return (this.subjectId === other.subjectId || !other.subjectId) &&
+      this.permissions.includes(other.permissions) &&
       this.agents.includes(other.agents)
   }
 
   /**
    * @param {AclRule|Permissions|string|string[]} first
    * @param {Agents|string|string[]} [agents]
+   * @param {string} [subjectId]
    */
-  static from (first, agents) {
+  static from (first, agents, subjectId) {
     if (first instanceof AclRule) {
       return first.clone()
     }
-    return new AclRule(first, agents)
+    return new AclRule(first, agents, subjectId)
   }
 }

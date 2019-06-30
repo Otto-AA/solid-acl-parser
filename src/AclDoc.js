@@ -1,6 +1,7 @@
 import Agents from './Agents'
 import Permissions from './Permissions'
 import AclRule from './AclRule'
+import AclParser from './AclParser';
 
 /** @typedef {import("./AclRule").default} AclRule */
 /** @typedef {import("./Permissions").default} Permissions */
@@ -28,7 +29,7 @@ export default class AclDoc {
    * @param {AclRule} rule
    */
   hasRule (...args) {
-    // TODO
+    // TODO: What happens when multiple agents are passed?
     const rule = AclRule.from(...args)
     return rule.split()
       .every(splitRule => this.rules.some(r => r.includes(splitRule)))
@@ -46,7 +47,13 @@ export default class AclDoc {
         }
       })
     }
-    this.rules = this.rules.filter(r => !r.agents.isEmpty())
+  }
+
+  /**
+   * @param {string} subjectId
+   */
+  deleteBySubject (subjectId) {
+    this.rules = this.rules.filter(rule => rule.subjectId !== subjectId)
   }
 
   /**
@@ -91,6 +98,15 @@ export default class AclDoc {
   }
 
   /**
+   * @description Use this to get a rule list for converting to turtle
+   * @returns {AclRule[]}
+   */
+  getMinifiedRules () {
+    // TODO
+    return this.rules
+  }
+
+  /**
    * @description add data which isn't an access restriction
    * @param {any}
    */
@@ -102,6 +118,7 @@ export default class AclDoc {
    * @description Create the turtle representation for this acl document
    */
   toTurtle () {
-    // TODO
+    const parser = new AclParser()
+    return parser.aclDocToTurtle(this)
   }
 }
