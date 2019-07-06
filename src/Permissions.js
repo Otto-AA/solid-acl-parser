@@ -105,7 +105,7 @@ export default class Permissions {
       return firstVal.clone()
     }
     if (typeof firstVal === 'string' || typeof firstVal === 'undefined') {
-      return new Permissions(...val)
+      return new Permissions(...val.filter(v => typeof v !== 'undefined'))
     }
     if (Array.isArray(firstVal)) {
       return new Permissions(...firstVal)

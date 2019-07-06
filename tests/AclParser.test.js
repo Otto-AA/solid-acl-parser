@@ -21,10 +21,6 @@ beforeAll(() => {
 test('can parse sample turtle file', async () => {
   const parser = new AclParser()
   const doc = await parser.turtleToAclDoc(sampleTurtle)
-  console.log('parsed doc')
-  console.log(JSON.stringify(doc, null, 2))
-  console.log()
-  console.log()
   const turtle = await parser.aclDocToTurtle(doc)
-  console.log(turtle)
+  expect(typeof turtle).toBe('string')
 })

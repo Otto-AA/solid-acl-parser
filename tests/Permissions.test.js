@@ -42,6 +42,9 @@ describe('add and delete permissions', () => {
       expect(permissions.has(APPEND, CONTROL)).toBe(false)
       expect(Permissions.from().has(READ)).toBe(false)
     })
+    test('can pass one undefined parameter to create empty permissions', () => {
+      expect(Permissions.from(undefined).isEmpty()).toBe(true)
+    })
     test('can use Permissions.from with string array', () => {
       const permissions = Permissions.from([READ, WRITE])
       expect(permissions.has(READ, WRITE)).toBe(true)

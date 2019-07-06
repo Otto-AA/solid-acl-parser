@@ -202,7 +202,6 @@ export default class AclDoc {
    * @returns {string}
    */
   _getDefaultAccessTo () {
-    console.log('_getDefaultAccessTo')
     if (!this.defaultAccessTo) {
       throw new Error('The accessTo value must be specified in the constructor options or directly when calling the methods')
     }

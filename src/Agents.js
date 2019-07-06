@@ -156,8 +156,8 @@ export default class Agents {
     if (firstVal instanceof Agents) {
       return firstVal.clone()
     }
-    if (typeof firstVal === 'string' || val.length === 0) {
-      return new Agents(...val)
+    if (typeof firstVal === 'string' || typeof firstVal === 'undefined') {
+      return new Agents(...val.filter(v => typeof v !== 'undefined'))
     }
     if (Array.isArray(firstVal)) {
       return new Agents(...firstVal)

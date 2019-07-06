@@ -134,11 +134,11 @@ export default class AclRule {
     const rules = []
 
     // e.g. AclRule([READ, WRITE], ['web', 'id']) - AclRule([READ, WRITE], 'web') = AclRule([READ, WRITE], 'id')
-    const agents = Agents.subtract(first, second)
+    const agents = Agents.subtract(first.agents, second.agents)
     rules.push(new AclRule(first.permissions, agents, first.accessTo, first.otherQuads))
 
     // e.g. AclRule([READ, WRITE], 'web') - AclRule(READ, 'web') = AclRule(READ, 'web')
-    const permissions = Permissions.subtract(first, second)
+    const permissions = Permissions.subtract(first.permissions, second.permissions)
     rules.push(new AclRule(permissions, first.agents, first.accessTo, first.otherQuads))
 
     return rules.filter(rule => !rule.hasNoEffect())

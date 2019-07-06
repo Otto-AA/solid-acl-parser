@@ -11,9 +11,11 @@ const sampleRules = [
   new AclRule(WRITE, 'https://example.third/#me')
 ]
 
+const defaultAccessTo = 'https://example.org/foo/bar.ext'
+
 describe('add and delete rules', () => {
   test('can add and delete multiple rules', () => {
-    const doc = new AclDoc()
+    const doc = new AclDoc({ defaultAccessTo })
     sampleRules.forEach(rule => doc.addRule(rule))
     sampleRules.forEach(rule => expect(doc.hasRule(rule)).toBe(true))
 
@@ -36,7 +38,7 @@ describe('add and delete rules', () => {
         new AclRule([READ, WRITE], secondAgent),
         new AclRule(WRITE, thirdAgent)
       ]
-      const doc = new AclDoc()
+      const doc = new AclDoc({ defaultAccessTo })
       rules.forEach(rule => doc.addRule(rule))
 
       doc.deleteRule(WRITE, [secondAgent, thirdAgent])
@@ -48,7 +50,7 @@ describe('add and delete rules', () => {
     })
     test('deletePermissions only affects specified permissions', () => {
       const rule = new AclRule([READ, WRITE], 'https://example.second#me')
-      const doc = new AclDoc()
+      const doc = new AclDoc({ defaultAccessTo })
       doc.addRule(rule)
       doc.deletePermissions(READ)
       expect(doc.hasRule(READ, rule.agents)).toBe(false)
@@ -58,7 +60,7 @@ describe('add and delete rules', () => {
       const firstAgent = 'https://example.first#me'
       const secondAgent = 'https://example.second#me'
       const rule = new AclRule([READ, WRITE], [firstAgent, secondAgent])
-      const doc = new AclDoc()
+      const doc = new AclDoc({ defaultAccessTo })
       doc.addRule(rule)
       doc.deleteAgents(firstAgent)
       expect(doc.hasRule(READ, firstAgent)).toBe(false)
@@ -69,7 +71,7 @@ describe('add and delete rules', () => {
 
   describe('can use different ways to work with rules', () => {
     test('explicit', () => {
-      const doc = new AclDoc()
+      const doc = new AclDoc({ defaultAccessTo })
       const rule = new AclRule(new Permissions(READ), new Agents('web', 'ids'))
       doc.addRule(rule)
       expect(doc.hasRule(rule)).toBe(true)
@@ -78,7 +80,7 @@ describe('add and delete rules', () => {
     })
 
     test('casting', () => {
-      const doc = new AclDoc()
+      const doc = new AclDoc({ defaultAccessTo })
       doc.addRule([READ, WRITE], ['web', 'ids'])
       expect(doc.hasRule([READ, WRITE], 'web')).toBe(true)
       expect(doc.hasRule([READ, WRITE], 'ids')).toBe(true)

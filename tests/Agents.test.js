@@ -167,6 +167,9 @@ describe('meta methods', () => {
       expect(Agents.from(sampleWebIds[0]).hasWebId(sampleWebIds[0])).toBe(true)
       expect(Agents.from(...sampleWebIds).hasWebId(...sampleWebIds)).toBe(true)
     })
+    test('can pass one undefined value to create empty agents', () => {
+      expect(Agents.from(undefined).isEmpty()).toBe(true)
+    })
     test('can use array of web ids', () => {
       expect(Agents.from(sampleWebIds).hasWebId(...sampleWebIds)).toBe(true)
     })
