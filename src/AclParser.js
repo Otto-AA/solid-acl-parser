@@ -1,14 +1,16 @@
 import N3 from 'n3'
 import AclDoc from './AclDoc'
 import prefixes from './prefixes'
-import AclRule from './AclRule';
+import AclRule from './AclRule'
 
 const predicates = {
   mode: `${prefixes.acl}mode`,
   agent: `${prefixes.acl}agent`,
   agentGroup: `${prefixes.acl}agentGroup`,
   agentClass: `${prefixes.acl}agentClass`,
-  // accessTo: `${prefixes.acl}accessTo`,
+  accessTo: `${prefixes.acl}accessTo`,
+  default: `${prefixes.acl}default`,
+  defaultForNew: `${prefixes.acl}defaultForNew`,
   type: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'
 }
 
@@ -40,7 +42,7 @@ export default class AclParser {
   async turtleToAclDoc (aclTurtle) {
     const doc = new AclDoc()
     await this._parseRules(aclTurtle,
-      rule => doc.addRule(rule),
+      (subjectId, rule) => doc.addRule(rule, null, null, subjectId),
       otherQuad => doc.addOther(otherQuad))
 
     return doc
@@ -64,13 +66,13 @@ export default class AclParser {
     return new Promise((resolve, reject) => {
       this.parser.parse(turtle, (error, quad, prefixes) => {
         if (error) {
-          reject(error)
+          return reject(error)
         }
 
         // N3 returns quad=null when finished
         if (quad === null) {
           if (curBlock.isAuthorizationType) {
-            ruleCallback(curBlock.rule)
+            ruleCallback(curBlock.subj, curBlock.rule)
           } else {
             curBlock.quads.forEach(quad => otherCallback(quad))
           }
@@ -83,12 +85,12 @@ export default class AclParser {
         // Handle multiple blocks
         if (curBlock.subj !== subject.id) {
           if (curBlock.isAuthorizationType) {
-            ruleCallback(curBlock.rule)
+            ruleCallback(curBlock.subj, curBlock.rule)
           } else if (curBlock.subj !== null) {
             curBlock.quads.forEach(quad => otherCallback(quad))
           }
           curBlock.subj = subject.id
-          curBlock.rule = new AclRule([], [], subject.id)
+          curBlock.rule = new AclRule()
           curBlock.isAuthorizationType = false
           curBlock.quads = []
         }
@@ -110,11 +112,13 @@ export default class AclParser {
   _addQuadToRule (rule, quad) {
     const { predicate, object: { value } } = quad
 
-    // TODO: accessTo
-
     switch (predicate.id) {
       case predicates.mode:
         rule.permissions.add(value)
+        break
+
+      case predicates.accessTo:
+        rule.accessTo.push(value)
         break
 
       case predicates.agent:
@@ -125,7 +129,7 @@ export default class AclParser {
         rule.agents.addGroup(value)
         break
 
-      case predicate.agentClass:
+      case predicates.agentClass:
         switch (value) {
           case agentClasses.public:
             rule.agents.addPublic()
@@ -138,6 +142,17 @@ export default class AclParser {
           default:
             throw new Error('Unexpected value for agentClass: ' + value)
         }
+        break
+
+      case predicates.default:
+        rule.default = value
+        break
+
+      // defaultForNew has been replaced by default
+      // only for backwards compatibility
+      case predicates.defaultForNew:
+        rule.defaultForNew = value
+        rule.default = value
         break
 
       default:
@@ -153,7 +168,12 @@ export default class AclParser {
     const writer = new N3.Writer({ prefixes })
 
     const rules = doc.getMinifiedRules()
-    const quads = [].concat(...rules.map(rule => this._ruleToQuads(rule)))
+    /** @type {N3.Quad[]} */
+    const quads = []
+    for (const [subjectId, rule] of Object.entries(rules)) {
+      const ruleQuads = this._ruleToQuads(subjectId, rule)
+      quads.push(...ruleQuads)
+    }
     quads.push(...doc.otherQuads)
     writer.addQuads(quads)
 
@@ -168,38 +188,33 @@ export default class AclParser {
   }
 
   /**
+   * @param {string} subjectId
    * @param {AclRule} rule
    * @returns {N3.Quad[]}
    */
-  _ruleToQuads (rule) {
-    const { DataFactory: { quad, namedNode, literal } } = N3
+  _ruleToQuads (subjectId, rule) {
+    const { DataFactory: { quad, namedNode } } = N3
     const quads = []
-    const subjectId = rule.subjectId || ('acl-parser-subject-' + this.subjectIdCounter++)
+    subjectId = subjectId || ('acl-parser-subject-' + this.subjectIdCounter++)
 
     quads.push(quad(
       namedNode(subjectId),
       namedNode(predicates.type),
       namedNode(types.authorization)
     ))
-    for (const permission of rule.permissions.set) {
-      quads.push(quad(
-        namedNode(subjectId),
-        namedNode(predicates.mode),
-        literal(permission)
-      ))
-    }
+    // Agents
     for (const webId of rule.agents.webIds) {
       quads.push(quad(
         namedNode(subjectId),
         namedNode(predicates.agent),
-        literal(webId)
+        namedNode(webId)
       ))
     }
     for (const group of rule.agents.groups) {
       quads.push(quad(
         namedNode(subjectId),
         namedNode(predicates.agentGroup),
-        literal(group)
+        namedNode(group)
       ))
     }
     if (rule.agents.public) {
@@ -214,6 +229,37 @@ export default class AclParser {
         namedNode(subjectId),
         namedNode(predicates.agentClass),
         namedNode(agentClasses.authenticated)
+      ))
+    }
+    // accessTo
+    for (const uri of rule.accessTo) { // TODO: Check if uri is the correct term
+      quads.push(quad(
+        namedNode(subjectId),
+        namedNode(predicates.accessTo),
+        namedNode(uri)
+      ))
+    }
+    // Provides default permissions for contained items?
+    if (typeof rule.default !== 'undefined') {
+      quads.push(quad(
+        namedNode(subjectId),
+        namedNode(predicates.default),
+        namedNode(rule.default)
+      ))
+    }
+    if (typeof rule.defaultForNew !== 'undefined') {
+      quads.push(quad(
+        namedNode(subjectId),
+        namedNode(predicates.defaultForNew),
+        namedNode(rule.defaultForNew)
+      ))
+    }
+    // Permissions
+    for (const permission of rule.permissions.set) {
+      quads.push(quad(
+        namedNode(subjectId),
+        namedNode(predicates.mode),
+        namedNode(permission)
       ))
     }
 

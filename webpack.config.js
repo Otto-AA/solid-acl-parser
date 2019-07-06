@@ -3,7 +3,7 @@ const path = require('path')
 // Configurations shared between all builds
 const common = {
   mode: 'production',
-  entry: './src/index.js',
+  entry: ['babel-polyfill', './src/index.js'],
   output: {
     filename: 'acl-utils.bundle.js',
     library: 'AclUtils',

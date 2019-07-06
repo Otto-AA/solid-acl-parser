@@ -1,4 +1,4 @@
-import { setEquals } from './setUtils'
+import { iterableEquals } from './utils'
 
 /**
  * @description class describing multiple agents
@@ -101,6 +101,14 @@ export default class Agents {
   }
 
   /**
+   * @description Return all common agents between these two groups
+   * @param {Agents} other
+   * @returns {Agents}
+   */
+  diff (other) {
+  }
+
+  /**
    * @description Delete all agents from this which are in common with the other
    * @param {Agents} other
    */
@@ -132,8 +140,8 @@ export default class Agents {
    * @returns {boolean}
    */
   equals (other) {
-    return setEquals(this.webIds, other.webIds) &&
-      setEquals(this.groups, other.groups) &&
+    return iterableEquals(this.webIds, other.webIds) &&
+      iterableEquals(this.groups, other.groups) &&
       this.public === other.public &&
       this.authenticated === other.authenticated
   }
@@ -172,7 +180,48 @@ export default class Agents {
     if (Array.isArray(val)) {
       return new Agents(...val)
     }
+    if (typeof val === 'undefined') {
+      return new Agents()
+    }
     throw new Error('Invalid args', val)
+  }
+
+  /**
+   * @description Return all common agents
+   * @param {Agents} first
+   * @param {Agents} second
+   * @returns {Agents}
+   */
+  static common (first, second) {
+    const agents = new Agents()
+    agents.addWebId(...[...first.webIds].filter(webId => second.hasWebId(webId)))
+    agents.addGroup(...[...first.groups].filter(group => second.hasGroup(group)))
+    if (first.isPublic() && second.isPublic()) {
+      agents.addPublic()
+    }
+    if (first.isAuthenticated() && second.isAuthenticated()) {
+      agents.addAuthenticated()
+    }
+    return agents
+  }
+
+  /**
+   * @description Return all agents from the first which are not in the second
+   * @param {Agents} first
+   * @param {Agents} second
+   * @returns {Agents}
+   */
+  static subtract (first, second) {
+    const agents = new Agents()
+    agents.addWebId(...[...first.webIds].filter(webId => !second.hasWebId(webId)))
+    agents.addGroup(...[...first.groups].filter(group => !second.hasGroup(group)))
+    if (first.isPublic() && !second.isPublic()) {
+      agents.addPublic()
+    }
+    if (first.isAuthenticated() && !second.isAuthenticated()) {
+      agents.addAuthenticated()
+    }
+    return agents
   }
 
   /**

@@ -1,5 +1,5 @@
 import prefixes from './prefixes'
-import { setEquals } from './setUtils'
+import { iterableEquals } from './utils'
 
 const permissionLinks = {
   READ: `${prefixes.acl}Read`,
@@ -44,6 +44,7 @@ export default class Permissions {
 
   /**
    * @param {Permissions} other
+   * // TODO: Change to return instead of modifying
    */
   merge (other) {
     this.add(...other.set)
@@ -54,7 +55,7 @@ export default class Permissions {
    * @returns {boolean}
    */
   equals (other) {
-    return setEquals(this.set, other.set)
+    return iterableEquals(this.set, other.set)
   }
 
   /**
@@ -70,6 +71,14 @@ export default class Permissions {
    */
   clone () {
     return new Permissions(...this.set)
+  }
+
+  /**
+   * @description Return true when no permissions are stored
+   * @returns {boolean}
+   */
+  isEmpty () {
+    return this.set.size === 0
   }
 
   /**
@@ -100,11 +109,38 @@ export default class Permissions {
     if (Array.isArray(val)) {
       return new Permissions(...val)
     }
-    throw new Error('Invalid arguments', val)
+    if (typeof val === 'undefined') {
+      return new Permissions()
+    }
+    throw new Error(`Invalid arguments: ${val}`)
+  }
+
+  /**
+   * @description Return all common permissions
+   * @param {Permissions} first
+   * @param {Permissions} second
+   * @returns {Permissions}
+   */
+  static common (first, second) {
+    const commonPermissions = [...first.set].filter(perm => second.has(perm))
+    return new Permissions(...commonPermissions)
+  }
+
+  /**
+   * @description Return all permissions from the first which aren't in the second
+   * @param {Permissions} first
+   * @param {Permissions} second
+   * @returns {Permissions}
+   */
+  static subtract (first, second) {
+    const permissions = [...first.set].filter(perm => !second.has(perm))
+    return new Permissions(...permissions)
   }
 
   static get READ () { return permissionLinks.READ }
   static get WRITE () { return permissionLinks.WRITE }
   static get APPEND () { return permissionLinks.APPEND }
   static get CONTROL () { return permissionLinks.CONTROL }
+
+  static get ALL () { return new Permissions(...Object.values(permissionLinks)) }
 }

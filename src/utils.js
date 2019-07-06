@@ -1,8 +1,8 @@
 /**
- * @param {Set} a
- * @param {Set} b
+ * @param {Iterable} a
+ * @param {Iterable} b
  * @returns {boolean}
  */
-export function setEquals (a, b) {
+export function iterableEquals (a, b) {
   return a.size === b.size && [...a].every(val => b.has(val))
 }
