@@ -33,31 +33,49 @@ describe('create and manipulate agents', () => {
   test('can use public', () => {
     const agents = new Agents(...sampleWebIds)
     agents.addPublic()
-    expect(agents.isPublic()).toBe(true)
+    expect(agents.hasPublic()).toBe(true)
     agents.deletePublic()
-    expect(agents.isPublic()).toBe(false)
+    expect(agents.hasPublic()).toBe(false)
 
-    // WebIds and other agents aren't affected by deletePublic
+    // Assure that WebIds and other agents aren't affected by deletePublic
     expect(agents.hasWebId(...sampleWebIds)).toBe(true)
   })
   test('can use authenticated', () => {
     const agents = new Agents()
     agents.addAuthenticated()
-    expect(agents.isAuthenticated()).toBe(true)
+    expect(agents.hasAuthenticated()).toBe(true)
     agents.deleteAuthenticated()
-    expect(agents.isAuthenticated()).toBe(false)
+    expect(agents.hasAuthenticated()).toBe(false)
+  })
+  test('can chain add and delete', () => {
+    const agents = new Agents()
+    agents.addWebId(...sampleWebIds)
+      .addGroup(...sampleGroups)
+      .deletePublic()
+      .deleteAuthenticated()
+      .deleteWebId(sampleWebIds[0])
+      .deleteGroup(sampleGroups[0])
+      .addPublic()
+      .addAuthenticated()
+
+    expect(agents.hasWebId(sampleWebIds[0])).toBe(false)
+    expect(agents.hasWebId(...sampleWebIds.slice(1))).toBe(true)
+    expect(agents.hasGroup(sampleGroups[0])).toBe(false)
+    expect(agents.hasGroup(...sampleGroups.slice(1))).toBe(true)
+    expect(agents.hasPublic()).toBe(true)
+    expect(agents.hasAuthenticated()).toBe(true)
   })
 
   test('Agents.PUBLIC returns a new agents instance with public', () => {
     const agents = Agents.PUBLIC
-    expect(agents.isPublic()).toBe(true)
+    expect(agents.hasPublic()).toBe(true)
     agents.deletePublic()
     expect(agents.isEmpty()).toBe(true)
   })
 
   test('Agents.AUTHENTICATED returns a new agents instance with authenticated', () => {
     const agents = Agents.AUTHENTICATED
-    expect(agents.isAuthenticated()).toBe(true)
+    expect(agents.hasAuthenticated()).toBe(true)
     agents.deleteAuthenticated()
     expect(agents.isEmpty()).toBe(true)
   })
@@ -69,12 +87,12 @@ describe('create and manipulate agents', () => {
     second.addGroup(...sampleGroups)
     second.addPublic()
 
-    first.merge(second)
+    const merged = Agents.merge(first, second)
 
-    expect(first.hasWebId(...sampleWebIds)).toBe(true)
-    expect(first.hasGroup(...sampleGroups)).toBe(true)
-    expect(first.isPublic()).toBe(true)
-    expect(first.isAuthenticated()).toBe(false)
+    expect(merged.hasWebId(...sampleWebIds)).toBe(true)
+    expect(merged.hasGroup(...sampleGroups)).toBe(true)
+    expect(merged.hasPublic()).toBe(true)
+    expect(merged.hasAuthenticated()).toBe(false)
   })
 })
 
@@ -197,8 +215,8 @@ describe('meta methods', () => {
       expect(common.hasWebId(...sampleWebIds.slice(1))).toBe(false)
       expect(common.hasGroup(sampleGroups[0])).toBe(false)
       expect(common.hasGroup(...sampleGroups.slice(1))).toBe(true)
-      expect(common.isPublic()).toBe(true)
-      expect(common.isAuthenticated()).toBe(false)
+      expect(common.hasPublic()).toBe(true)
+      expect(common.hasAuthenticated()).toBe(false)
     })
   })
 
@@ -219,8 +237,8 @@ describe('meta methods', () => {
       expect(subtracted.hasWebId(...sampleWebIds.slice(1))).toBe(true)
       expect(subtracted.hasGroup(sampleGroups[0])).toBe(false)
       expect(subtracted.hasGroup(...sampleGroups.slice(1))).toBe(false)
-      expect(subtracted.isPublic()).toBe(true)
-      expect(subtracted.isAuthenticated()).toBe(false)
+      expect(subtracted.hasPublic()).toBe(true)
+      expect(subtracted.hasAuthenticated()).toBe(false)
     })
   })
 

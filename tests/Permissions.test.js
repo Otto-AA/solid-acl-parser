@@ -18,6 +18,14 @@ describe('add and delete permissions', () => {
     const permissions = new Permissions(...validPermissionsArr)
     expect(permissions.has(...validPermissionsArr)).toBe(true)
   })
+  test('can chain add and delete', () => {
+    const permissions = new Permissions()
+    permissions.add(READ, WRITE)
+      .delete(READ)
+      .add(CONTROL)
+    expect(permissions.has(WRITE, CONTROL)).toBe(true)
+    expect(permissions.has(READ)).toBe(false)
+  })
   test('throws when trying to add my-invalid-permission', () => {
     expect(() => new Permissions('my-invalid-permission')).toThrowError('Invalid permission')
   })
@@ -115,14 +123,14 @@ describe('meta functions', () => {
     test('can merge two distinct permissions', () => {
       const first = new Permissions(READ)
       const second = new Permissions(WRITE, CONTROL)
-      first.merge(second)
-      expect(first.has(READ, WRITE, CONTROL)).toBe(true)
+      const merged = Permissions.merge(first, second)
+      expect(merged.has(READ, WRITE, CONTROL)).toBe(true)
     })
     test('can merge permissions with a common permission', () => {
       const first = new Permissions(READ, WRITE)
       const second = new Permissions(WRITE, APPEND)
-      first.merge(second)
-      expect(first.has(READ, WRITE, APPEND)).toBe(true)
+      const merged = Permissions.merge(first, second)
+      expect(merged.has(READ, WRITE, APPEND)).toBe(true)
     })
   })
 

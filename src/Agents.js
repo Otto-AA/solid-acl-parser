@@ -18,9 +18,11 @@ export default class Agents {
 
   /**
    * @param {...string} [webIds]
+   * @returns {this}
    */
   addWebId (...webIds) {
     webIds.forEach(webId => this.webIds.add(webId))
+    return this
   }
 
   /**
@@ -33,16 +35,20 @@ export default class Agents {
 
   /**
    * @param {...string} webIds
+   * @return {this}
    */
   deleteWebId (...webIds) {
     webIds.forEach(webId => this.webIds.delete(webId))
+    return this
   }
 
   /**
-   * @param {...string} [groups] - instance of vcard:Group
+   * @param {...string} [groups] - link to vcard:Group
+   * @return {this}
    */
   addGroup (...groups) {
     groups.forEach(group => this.groups.add(group))
+    return this
   }
 
   /**
@@ -55,65 +61,75 @@ export default class Agents {
 
   /**
    * @param {...string} groups
+   * @returns {this}
    */
   deleteGroup (...groups) {
     groups.forEach(group => this.groups.delete(group))
+    return this
   }
 
   /**
    * @description Access is given to everyone
+   * @return {this}
    */
   addPublic () {
     this.public = true
+    return this
   }
 
-  isPublic () {
+  /**
+   * @returns {boolean}
+   */
+  hasPublic () {
     return this.public
   }
 
+  /**
+   * @returns {this}
+   */
   deletePublic () {
     this.public = false
+    return this
   }
 
   /**
    * @description Access is only given to people who have logged on and provided a specific ID
+   * @returns {this}
    */
   addAuthenticated () {
     this.authenticated = true
-  }
-
-  isAuthenticated () {
-    return this.authenticated
-  }
-
-  deleteAuthenticated () {
-    this.authenticated = false
+    return this
   }
 
   /**
-   * @param {Agents} other
+   * @returns {boolean}
    */
-  merge (other) {
-    this.addWebId(...other.webIds)
-    this.addGroup(...other.groups)
-    this.public = this.public || other.public
-    this.authenticated = this.authenticated || other.authenticated
+  hasAuthenticated () {
+    return this.authenticated
+  }
+
+  /**
+   * @returns {this}
+   */
+  deleteAuthenticated () {
+    this.authenticated = false
+    return this
   }
 
   /**
    * @returns {Agents}
    */
   clone () {
-    const agents = new Agents()
-    agents.addWebId(...this.webIds)
-    agents.addGroup(...this.groups)
-    if (this.isPublic()) {
-      agents.addPublic()
+    const clone = new Agents()
+    clone.addWebId(...this.webIds)
+    clone.addGroup(...this.groups)
+    if (this.hasPublic()) {
+      clone.addPublic()
     }
-    if (this.isAuthenticated()) {
-      agents.addAuthenticated()
+    if (this.hasAuthenticated()) {
+      clone.addAuthenticated()
     }
-    return agents
+    return clone
   }
 
   /**
@@ -150,6 +166,7 @@ export default class Agents {
 
   /**
    * @param {Agents|...string|string[]} val
+   * @returns {Agents}
    */
   static from (...val) {
     const firstVal = val[0]
@@ -175,13 +192,29 @@ export default class Agents {
     const agents = new Agents()
     agents.addWebId(...[...first.webIds].filter(webId => second.hasWebId(webId)))
     agents.addGroup(...[...first.groups].filter(group => second.hasGroup(group)))
-    if (first.isPublic() && second.isPublic()) {
+    if (first.hasPublic() && second.hasPublic()) {
       agents.addPublic()
     }
-    if (first.isAuthenticated() && second.isAuthenticated()) {
+    if (first.hasAuthenticated() && second.hasAuthenticated()) {
       agents.addAuthenticated()
     }
     return agents
+  }
+
+  /**
+   * @description Return a new Agents instance which includes all agents from first and second
+   * @param {Agents} first
+   * @param {Agents} second
+   * @returns {Agents}
+   */
+  static merge (first, second) {
+    const merged = first.clone()
+    merged.addWebId(...second.webIds)
+    merged.addGroup(...second.groups)
+    merged.public = merged.public || second.public
+    merged.authenticated = merged.authenticated || second.authenticated
+
+    return merged
   }
 
   /**
@@ -194,10 +227,10 @@ export default class Agents {
     const agents = new Agents()
     agents.addWebId(...[...first.webIds].filter(webId => !second.hasWebId(webId)))
     agents.addGroup(...[...first.groups].filter(group => !second.hasGroup(group)))
-    if (first.isPublic() && !second.isPublic()) {
+    if (first.hasPublic() && !second.hasPublic()) {
       agents.addPublic()
     }
-    if (first.isAuthenticated() && !second.isAuthenticated()) {
+    if (first.hasAuthenticated() && !second.hasAuthenticated()) {
       agents.addAuthenticated()
     }
     return agents

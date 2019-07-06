@@ -135,8 +135,8 @@ export default class AclDoc {
 
     return Object.values(this.rules)
       .filter(rule => rule.agents.includes(agents))
-      .map(rule => rule.permissions.clone())
-      .reduce((prevPermission, permission) => prevPermission.merge(permission))
+      .map(rule => rule.permissions)
+      .reduce(Permissions.merge) // TODO: Check if this works
   }
 
   /**
@@ -148,8 +148,8 @@ export default class AclDoc {
 
     return Object.values(this.rules)
       .filter(rule => rule.permissions.includes(permissions))
-      .map(rule => rule.agents.clone())
-      .reduce((prevAgents, agents) => prevAgents.merge(agents))
+      .map(rule => rule.agents)
+      .reduce(Agents.merge) // TODO: Check if this works
   }
 
   /**

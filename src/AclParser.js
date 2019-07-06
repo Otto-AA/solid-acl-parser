@@ -255,7 +255,7 @@ export default class AclParser {
       ))
     }
     // Permissions
-    for (const permission of rule.permissions.set) {
+    for (const permission of rule.permissions) {
       quads.push(quad(
         namedNode(subjectId),
         namedNode(predicates.mode),

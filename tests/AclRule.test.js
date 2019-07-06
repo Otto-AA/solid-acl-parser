@@ -10,7 +10,7 @@ describe('constructor', () => {
     const agents = new Agents()
     agents.addPublic()
     const rule = new AclRule(permissions, agents)
-    expect(rule.agents.isPublic()).toBe(true)
+    expect(rule.agents.hasPublic()).toBe(true)
     expect(rule.permissions.has(READ, WRITE)).toBe(true)
   })
 })

@@ -14,16 +14,18 @@ export default class Permissions {
    */
   constructor (...permissions) {
     /** @type {Set<string>} */
-    this.set = new Set()
+    this.permissions = new Set()
     this.add(...permissions)
   }
 
   /**
    * @param  {...string} permissions
+   * @returns {this}
    */
   add (...permissions) {
     this._assertValidPermissions(...permissions)
-    permissions.forEach(perm => this.set.add(perm))
+    permissions.forEach(perm => this.permissions.add(perm))
+    return this
   }
 
   /**
@@ -31,23 +33,16 @@ export default class Permissions {
    * @returns {boolean}
    */
   has (...permissions) {
-    return permissions.every(permission => this.set.has(permission))
+    return permissions.every(permission => this.permissions.has(permission))
   }
 
   /**
    * @param  {...string} permissions
-   * @returns {boolean} return false if the element didn't exist
+   * @returns {this}
    */
   delete (...permissions) {
-    permissions.forEach(permission => this.set.delete(permission))
-  }
-
-  /**
-   * @param {Permissions} other
-   * // TODO: Change to return instead of modifying
-   */
-  merge (other) {
-    this.add(...other.set)
+    permissions.forEach(permission => this.permissions.delete(permission))
+    return this
   }
 
   /**
@@ -55,7 +50,7 @@ export default class Permissions {
    * @returns {boolean}
    */
   equals (other) {
-    return iterableEquals(this.set, other.set)
+    return iterableEquals(this.permissions, other.permissions)
   }
 
   /**
@@ -63,14 +58,14 @@ export default class Permissions {
    * @returns {boolean}
    */
   includes (other) {
-    return this.has(...other.set)
+    return this.has(...other.permissions)
   }
 
   /**
    * @returns {Permissions}
    */
   clone () {
-    return new Permissions(...this.set)
+    return new Permissions(...this.permissions)
   }
 
   /**
@@ -78,7 +73,7 @@ export default class Permissions {
    * @returns {boolean}
    */
   isEmpty () {
-    return this.set.size === 0
+    return this.permissions.size === 0
   }
 
   /**
@@ -97,7 +92,16 @@ export default class Permissions {
   }
 
   /**
+   * @description Make a permissions instance iterable
+   * @returns {IterableIterator<string>}
+   */
+  [Symbol.iterator] () {
+    return this.permissions.values()
+  }
+
+  /**
    * @param {Permissions|...string|string[]} val
+   * @returns {Permissions}
    */
   static from (...val) {
     const firstVal = val[0]
@@ -120,8 +124,18 @@ export default class Permissions {
    * @returns {Permissions}
    */
   static common (first, second) {
-    const commonPermissions = [...first.set].filter(perm => second.has(perm))
+    const commonPermissions = [...first.permissions].filter(perm => second.has(perm))
     return new Permissions(...commonPermissions)
+  }
+
+  /**
+   * @description Return all permissions which are in at least one of [first, second]
+   * @param {Permissions} first
+   * @param {Permissions} second
+   * @returns {Permissions}
+   */
+  static merge (first, second) {
+    return new Permissions(...first.permissions, ...second.permissions)
   }
 
   /**
@@ -131,7 +145,7 @@ export default class Permissions {
    * @returns {Permissions}
    */
   static subtract (first, second) {
-    const permissions = [...first.set].filter(perm => !second.has(perm))
+    const permissions = [...first.permissions].filter(perm => !second.has(perm))
     return new Permissions(...permissions)
   }
 
