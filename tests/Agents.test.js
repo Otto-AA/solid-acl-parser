@@ -48,22 +48,18 @@ describe('create and manipulate agents', () => {
     expect(agents.isAuthenticated()).toBe(false)
   })
 
-  test('can use delete to remove all agents from other agents instance', () => {
-    const first = new Agents(...sampleWebIds)
-    first.addGroup(...sampleGroups)
-    first.addPublic()
-    first.addAuthenticated()
-    const second = new Agents(...sampleWebIds.slice(1))
-    second.addGroup(...sampleGroups)
-    second.addPublic()
+  test('Agents.PUBLIC returns a new agents instance with public', () => {
+    const agents = Agents.PUBLIC
+    expect(agents.isPublic()).toBe(true)
+    agents.deletePublic()
+    expect(agents.isEmpty()).toBe(true)
+  })
 
-    first.delete(second)
-
-    expect(first.hasWebId(sampleWebIds[0])).toBe(true)
-    expect(first.hasWebId(...sampleWebIds.slice(1))).toBe(false)
-    expect(first.hasGroup(...sampleGroups)).toBe(false)
-    expect(first.isPublic()).toBe(false)
-    expect(first.isAuthenticated()).toBe(true)
+  test('Agents.AUTHENTICATED returns a new agents instance with authenticated', () => {
+    const agents = Agents.AUTHENTICATED
+    expect(agents.isAuthenticated()).toBe(true)
+    agents.deleteAuthenticated()
+    expect(agents.isEmpty()).toBe(true)
   })
 
   test('can use merge to get all agents from both instances', () => {
@@ -137,6 +133,94 @@ describe('meta methods', () => {
       expect(first.equals(clone)).toBe(true)
     })
   })
+
+  describe('isEmpty', () => {
+    test('returns true if no agents are stored', () => {
+      expect(Agents.from().isEmpty()).toBe(true)
+    })
+    test('returns false if one or more agents are stored', () => {
+      let agents = new Agents()
+      agents.addWebId(sampleWebIds[0])
+      expect(agents.isEmpty()).toBe(false)
+      agents = new Agents()
+      agents.addGroup(sampleGroups[0])
+      expect(agents.isEmpty()).toBe(false)
+      agents = new Agents()
+      agents.addPublic()
+      expect(agents.isEmpty()).toBe(false)
+      agents = new Agents()
+      agents.addAuthenticated()
+      expect(agents.isEmpty()).toBe(false)
+    })
+  })
+
+  describe('Agents.from', () => {
+    test('can use Agents instance which will return a clone', () => {
+      const agents = new Agents(...sampleWebIds)
+      agents.addPublic()
+      const newAgents = Agents.from(agents)
+      expect(newAgents.equals(agents))
+      expect(newAgents === agents).toBe(false)
+    })
+    test('can use zero or more web ids', () => {
+      expect(Agents.from().isEmpty()).toBe(true)
+      expect(Agents.from(sampleWebIds[0]).hasWebId(sampleWebIds[0])).toBe(true)
+      expect(Agents.from(...sampleWebIds).hasWebId(...sampleWebIds)).toBe(true)
+    })
+    test('can use array of web ids', () => {
+      expect(Agents.from(sampleWebIds).hasWebId(...sampleWebIds)).toBe(true)
+    })
+    test('throws error if invalid arguments are passed', () => {
+      expect(() => Agents.from(0)).toThrowError(/Invalid arguments/)
+      expect(() => Agents.from(null)).toThrowError(/Invalid arguments/)
+      expect(() => Agents.from({})).toThrowError(/Invalid arguments/)
+    })
+  })
+
+  describe('Agents.common', () => {
+    test('creates a new Agents instance with all agents which are in first and second', () => {
+      const first = new Agents()
+      first.addWebId(...sampleWebIds)
+      first.addGroup(...sampleGroups.slice(1))
+      first.addPublic()
+      const second = new Agents()
+      second.addWebId(sampleWebIds[0])
+      second.addGroup(...sampleGroups)
+      second.addPublic()
+      second.addAuthenticated()
+
+      const common = Agents.common(first, second)
+      expect(common.hasWebId(sampleWebIds[0])).toBe(true)
+      expect(common.hasWebId(...sampleWebIds.slice(1))).toBe(false)
+      expect(common.hasGroup(sampleGroups[0])).toBe(false)
+      expect(common.hasGroup(...sampleGroups.slice(1))).toBe(true)
+      expect(common.isPublic()).toBe(true)
+      expect(common.isAuthenticated()).toBe(false)
+    })
+  })
+
+  describe('Agents.subtract', () => {
+    test('creates a new Agents instance with all agents from first which are not in second', () => {
+      const first = new Agents()
+      first.addWebId(...sampleWebIds)
+      first.addGroup(...sampleGroups.slice(1))
+      first.addPublic()
+      first.addAuthenticated()
+      const second = new Agents()
+      second.addWebId(sampleWebIds[0])
+      second.addGroup(...sampleGroups)
+      second.addAuthenticated()
+
+      const subtracted = Agents.subtract(first, second)
+      expect(subtracted.hasWebId(sampleWebIds[0])).toBe(false)
+      expect(subtracted.hasWebId(...sampleWebIds.slice(1))).toBe(true)
+      expect(subtracted.hasGroup(sampleGroups[0])).toBe(false)
+      expect(subtracted.hasGroup(...sampleGroups.slice(1))).toBe(false)
+      expect(subtracted.isPublic()).toBe(true)
+      expect(subtracted.isAuthenticated()).toBe(false)
+    })
+  })
+
   test('agents.webIds is of the type Set', () => {
     const agents = new Agents(...sampleWebIds)
     expect(agents.webIds).toEqual(expect.any(Set))

@@ -97,20 +97,18 @@ export default class Permissions {
   }
 
   /**
-   * @param {Permissions|string|string[]} val
+   * @param {Permissions|...string|string[]} val
    */
-  static from (val) { // TODO: Test
-    if (val instanceof Permissions) {
-      return val.clone()
+  static from (...val) {
+    const firstVal = val[0]
+    if (firstVal instanceof Permissions) {
+      return firstVal.clone()
     }
-    if (typeof val === 'string') {
-      return new Permissions(val)
-    }
-    if (Array.isArray(val)) {
+    if (typeof firstVal === 'string' || typeof firstVal === 'undefined') {
       return new Permissions(...val)
     }
-    if (typeof val === 'undefined') {
-      return new Permissions()
+    if (Array.isArray(firstVal)) {
+      return new Permissions(...firstVal)
     }
     throw new Error(`Invalid arguments: ${val}`)
   }

@@ -25,6 +25,34 @@ describe('add and delete permissions', () => {
     const permissions = new Permissions(READ)
     permissions.delete(WRITE)
   })
+  test('Permissions.all creates a new Permissions instance with all permissions', () => {
+    const permissions = Permissions.ALL
+    expect(permissions.has(...validPermissionsArr)).toBe(true)
+  })
+  describe('Permissions.from', () => {
+    test('can use Permissions.from with Permissions instance', () => {
+      const permissions = new Permissions(READ, WRITE)
+      const newPermissions = Permissions.from(permissions)
+      expect(newPermissions.has(READ, WRITE)).toBe(true)
+      expect(newPermissions.has(APPEND, CONTROL)).toBe(false)
+    })
+    test('can use Permissions.from with zero or more strings', () => {
+      const permissions = Permissions.from(READ, WRITE)
+      expect(permissions.has(READ, WRITE)).toBe(true)
+      expect(permissions.has(APPEND, CONTROL)).toBe(false)
+      expect(Permissions.from().has(READ)).toBe(false)
+    })
+    test('can use Permissions.from with string array', () => {
+      const permissions = Permissions.from([READ, WRITE])
+      expect(permissions.has(READ, WRITE)).toBe(true)
+      expect(permissions.has(APPEND, CONTROL)).toBe(false)
+    })
+    test('throws error with invalid arguments', () => {
+      expect(() => Permissions.from(3)).toThrowError(/Invalid arguments/)
+      expect(() => Permissions.from(null)).toThrowError(/Invalid arguments/)
+      expect(() => Permissions.from({})).toThrowError(/Invalid arguments/)
+    })
+  })
 })
 
 describe('meta functions', () => {
@@ -70,6 +98,16 @@ describe('meta functions', () => {
     })
   })
 
+  describe('isEmpty', () => {
+    test('returns true if no permissions are stored', () => {
+      expect(Permissions.from().isEmpty()).toBe(true)
+    })
+    test('returns false if one or more permissions are stored', () => {
+      expect(Permissions.from(READ).isEmpty()).toBe(false)
+      expect(Permissions.from(READ, WRITE).isEmpty()).toBe(false)
+    })
+  })
+
   describe('merge', () => {
     test('can merge two distinct permissions', () => {
       const first = new Permissions(READ)
@@ -91,6 +129,30 @@ describe('meta functions', () => {
       const clone = first.clone()
       expect(first === clone).toBe(false)
       expect(first.equals(clone)).toBe(true)
+    })
+  })
+
+  describe('common', () => {
+    test('creates a new Permissions instance with the common permissions', () => {
+      const first = new Permissions(READ, WRITE)
+      const second = new Permissions(APPEND, WRITE)
+      const common = Permissions.common(first, second)
+      expect(common.has(WRITE)).toBe(true)
+      expect(common.has(READ)).toBe(false)
+      expect(common.has(APPEND)).toBe(false)
+      expect(common.has(CONTROL)).toBe(false)
+    })
+  })
+
+  describe('subtract', () => {
+    test('creates a new Permissions instance with all permissions from first which are not in second', () => {
+      const first = new Permissions(READ, WRITE)
+      const second = new Permissions(APPEND, WRITE)
+      const common = Permissions.subtract(first, second)
+      expect(common.has(READ)).toBe(true)
+      expect(common.has(WRITE)).toBe(false)
+      expect(common.has(APPEND)).toBe(false)
+      expect(common.has(CONTROL)).toBe(false)
     })
   })
 })

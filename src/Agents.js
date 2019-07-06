@@ -101,25 +101,6 @@ export default class Agents {
   }
 
   /**
-   * @description Return all common agents between these two groups
-   * @param {Agents} other
-   * @returns {Agents}
-   */
-  diff (other) {
-  }
-
-  /**
-   * @description Delete all agents from this which are in common with the other
-   * @param {Agents} other
-   */
-  delete (other) {
-    this.deleteWebId(...other.webIds)
-    this.deleteGroup(...other.groups)
-    this.public = this.public && !other.public
-    this.authenticated = this.authenticated && !other.authenticated
-  }
-
-  /**
    * @returns {Agents}
    */
   clone () {
@@ -168,22 +149,20 @@ export default class Agents {
   }
 
   /**
-   * @param {Agents|string|string[]} val
+   * @param {Agents|...string|string[]} val
    */
-  static from (val) { // TODO: Test
-    if (val instanceof Agents) {
-      return val.clone()
+  static from (...val) {
+    const firstVal = val[0]
+    if (firstVal instanceof Agents) {
+      return firstVal.clone()
     }
-    if (typeof val === 'string') {
-      return new Agents(val)
-    }
-    if (Array.isArray(val)) {
+    if (typeof firstVal === 'string' || val.length === 0) {
       return new Agents(...val)
     }
-    if (typeof val === 'undefined') {
-      return new Agents()
+    if (Array.isArray(firstVal)) {
+      return new Agents(...firstVal)
     }
-    throw new Error('Invalid args', val)
+    throw new Error(`Invalid arguments: ${val}`)
   }
 
   /**
