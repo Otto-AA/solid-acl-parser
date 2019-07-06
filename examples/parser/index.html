@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+  <head>
+    <title>acl-utils | parser example</title>
+
+    <style type="text/css">
+      textarea {
+        width: 40%;
+        min-height: 50em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>acl-utils | parser example</h1>
+    <p>Here you can test out how the acl file is modified when it is parsed to an AclDoc and then without any modification parsed backwards to acl (acl -> AclDoc -> acl)</p>
+    <p>It is mainly for testing out if nothing gets omitted while parsing, but you can also see the base usage of the parser in this example.</p>
+    <form>
+      <input type="text" id="baseUri" placeholder="Please enter the url of the acl file provided" value="./file.acl">
+      <button type="button" id="parse">Parse</button>
+    </form>
+    <textarea id="aclInput" placeholder="Please copy an acl file here"></textarea>
+    <textarea id="aclOutput" placeholder="Output will be shown here"></textarea>
+
+    <script type="application/javascript" src="../../dist/browser/acl-utils.bundle.js"></script>
+    <script type="application/javascript">
+      const { AclParser } = AclUtils
+      
+      const parseButton = document.getElementById('parse')
+      parseButton.onclick = () => {
+        console.log('clicked button')
+        const baseUri = document.getElementById('baseUri').value
+        const originalAcl = document.getElementById('aclInput').value
+
+        const parser = new AclParser(baseUri)
+
+        parser.turtleToAclDoc(originalAcl)
+          .then(doc => {
+            console.log('doc', doc)
+            return parser.aclDocToTurtle(doc)
+          })
+          .then(turtle => {
+            console.log('turtle', turtle)
+            document.getElementById('aclOutput').innerHTML = turtle
+          })
+      }
+    </script>
+  </body>
