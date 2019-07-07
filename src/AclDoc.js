@@ -16,6 +16,21 @@ import AclParser from './AclParser'
 /**
  * @description Class for storing information of an acl file
  * @alias module:AclDoc
+ * @example
+ * // Create a new AclDoc
+ * // We can specify a default accessTo value here. If not specified we will need to add it to the AclRule's
+ * const { READ } = Permissions
+ * const webId = 'https://solid.example.org/profile/card#me'
+ *
+ * const doc = new AclDoc({ defaultAccessTo: 'https://solid.example.org/foo/file.ext' })
+ *
+ * // Give one user all permissions (READ, WRITE, APPEND and CONTROL)
+ * // We can add a subjectId, else it will be generated automatically
+ * doc.addRule(new AclRule(Permissions.ALL, webId), '#owner')
+ *
+ * // Give everyone read access
+ * doc.addRule(new AclRule(READ, Agents.PUBLIC))
+ *
  */
 class AclDoc {
   /**
@@ -35,6 +50,11 @@ class AclDoc {
    * @param {Agents} agents
    * @param {string} [accessTo]
    * @param {string} [subjectId]
+   * @example
+   * const rule = new AclRule(new Permissions(READ, WRITE), new Agents('https://my.web.id/#me'))
+   * doc.addRule(rule)
+   * // addRule uses AclRule.from which means we could use following too
+   * doc.addRule([READ, WRITE], 'https://my.web.id/#me')
    */
   addRule (permissions, agents, accessTo, subjectId) {
     const rule = this._ruleFromArgs(permissions, agents, accessTo)
@@ -46,6 +66,12 @@ class AclDoc {
   /**
    * @param {AclRule} rule
    * @returns {boolean} true if this combination of these agents have the permissions for the accessTo file
+   * @example
+   * doc.addRule([READ, WRITE], ['https://first.web.id', 'https://second.web.id'])
+   * doc.hasRule(READ, 'https://first.web.id') // true
+   * doc.hasRule([READ, WRITE], ['https://first.web.id', 'https://second.web.id']) // true
+   * doc.hasRule(CONTROL, 'https://first.web.id') // false
+   * doc.hasRule(READ, 'https://third.web.id') // false
    */
   hasRule (...args) {
     // rulesToCheck contains all semi rules which aren't found yet
@@ -69,6 +95,12 @@ class AclDoc {
 
   /**
    * @param {AclRule} rule
+   * @example
+   * doc.addRule([READ, WRITE], ['https://first.web.id', 'https://second.web.id'])
+   * doc.deleteRule(READ, 'https://first.web.id')
+   * doc.hasRule(READ, 'https://first.web.id') // false
+   * doc.hasRule(WRITE, 'https://first.web.id') // true
+   * doc.hasRule([READ, WRITE], 'https://second.web.id') // true
    */
   deleteRule (...args) {
     const toDelete = this._ruleFromArgs(...args)
@@ -109,6 +141,12 @@ class AclDoc {
 
   /**
    * @param {Agents} agents
+   * @example
+   * // Remove all permissions for one specific webId and public
+   * const agents = new Agents()
+   * agents.addWebId('https://web.id')
+   * agents.addPublic()
+   * doc.deleteAgents(agents)
    */
   deleteAgents (agents) {
     this.deleteRule(new AclRule(Permissions.ALL, agents))
@@ -116,6 +154,10 @@ class AclDoc {
 
   /**
    * @param {Permissions} permissions
+   * @example
+   * // Set that no one (!) will be able to use APPEND on this resource
+   * // Do not use this with CONTROL, except if you are sure you want that
+   * doc.deletePermissions(APPEND)
    */
   deletePermissions (permissions) {
     permissions = Permissions.from(permissions)
@@ -131,6 +173,11 @@ class AclDoc {
    * Ignores accessTo
    * @param {Agents} agents
    * @returns {Permissions}
+   * @example
+   * // Check if a specific user has READ permissions
+   * const agents = new Agents('https://web.id')
+   * const permissions = doc.getPermissionsFor(agents)
+   * permissions.has(READ) // true if the user has read permissions
    */
   getPermissionsFor (agents) {
     agents = Agents.from(agents)
@@ -144,6 +191,14 @@ class AclDoc {
   /**
    * @param {Permissions} permissions
    * @returns {Agents}
+   * @example
+   * // Get all agents which have WRITE permissions
+   * const permissions = new Permissions(WRITE)
+   * const agents = doc.getAgentsWith(permissions)
+   * agents.hasWebId('https://web.id') // true if this user has write permissions
+   * agents.hasPublic() // true if everyone has write permissions
+   * // You can iterate over the webIds set if you want to list them all
+   * [...agents.webIds].forEach(webId => console.log(webId))
    */
   getAgentsWith (permissions) {
     permissions = Permissions.from(permissions)
@@ -178,6 +233,14 @@ class AclDoc {
 
   /**
    * @description Create the turtle representation for this acl document
+   * @example
+   * // TODO: Test if this works
+   * // Update the acl file
+   * const turtle = doc.toTurtle()
+   * solid.auth.fetch(aclUrl, {
+   *   method: 'PUT',
+   *   body: turtle
+   * })
    */
   toTurtle () {
     const parser = new AclParser()

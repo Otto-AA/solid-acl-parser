@@ -30,6 +30,22 @@ const types = {
 /**
  * @description Class for parsing a turtle representation of an acl file into an instance of the Acl class
  * @alias module:AclParser
+ * @example
+ * // Give a user read permissions to a file
+ * const fileUrl = 'https://pod.example.org/private/'
+ * const aclUrl = 'https://pod.example.org/private/file.acl' // Retrieve this from the acl field in the Link header
+ * const turtle = await solid.auth.fetch(aclUrl)
+ *
+ * const parser = new AclParser({ baseIRI: aclUrl })
+ * const doc = await parser.turtleToAclDoc(turtle)
+ * doc.defaultAccessTo = fileUrl
+ * doc.addRule(READ, 'https://other.web.id')
+ *
+ * const newTurtle = await parser.aclDocToTurtle(doc)
+ * await solid.auth.fetch(aclUrl, { // TODO: Check if this works
+ *   method: 'PUT',
+ *   body: newTurtle
+ * })
  */
 class AclParser {
   /**
@@ -167,7 +183,7 @@ class AclParser {
 
   /**
    * @param {AclDoc} doc
-   * @returns {string}
+   * @returns {Promise<string>}
    */
   aclDocToTurtle (doc) {
     const writer = new N3.Writer({ prefixes })

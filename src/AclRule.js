@@ -18,6 +18,19 @@ import { iterableEquals } from './utils'
 /**
  * @description Groups together permissions, agents and other relevant information for an acl rule
  * @alias module:AclRule
+ * @example
+ * // Store some data in an AclRule
+ * const { READ, WRITE } = Permissions
+ * const webId = 'https://solid.example.org/profile/card#me'
+ * const accessTo = 'https://solid.pod.org/foo/file.ext' // Could be an array
+ *
+ * const permissions = new Permissions(READ, WRITE)
+ * const agents = new Agents()
+ * const rule = new AclRule(permissions, agents, accessTo)
+ *
+ * // The constructor uses Permissions.from and Agents.from
+ * // Therefore we can also specify permissions and webIds like this:
+ * const rule = new AclRule([READ, WRITE], [webId], accessTo)
  */
 class AclRule {
   /**

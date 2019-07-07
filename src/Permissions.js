@@ -14,6 +14,20 @@ const permissionLinks = {
 
 /**
  * @alias module:Permissions
+ * @example
+ * const { READ, WRITE, APPEND, CONTROL } = Permissions
+ * // Create a new permissions instance with READ and WRITE permission
+ * const permissions = new Permissions(READ, WRITE)
+ * permissions.add(APPEND)
+ * permissions.has(READ, WRITE, APPEND) // true
+ * permissions.delete(APPEND)
+ * permissions.has(APPEND) // false
+ *
+ * // It has an inbuilt iterator which allows a for-each loop and using the spread syntax
+ * for (const perm of permissions) {
+ *   console.log(perm)
+ * }
+ * [...perm].forEach(perm => console.log(perm))
  */
 class Permissions {
   /**

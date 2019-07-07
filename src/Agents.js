@@ -7,6 +7,24 @@ import { iterableEquals } from './utils'
 /**
  * @description class describing multiple agents
  * @alias module:Agents
+ * @example
+ * const webId = 'https://solid.example.org/profile/card#me'
+ * const secondWebId = 'https://second.example.org/profile/card#me'
+ * const agents = new Agents(webId) // You can pass zero or more webIds to the constructor
+ *
+ * // Add a single web id
+ * agents.addWebId(secondWebId)
+ * agents.hasWebId(webId, secondWebId) // true
+ * agents.deleteWebId(webId)
+ *
+ * // Target everyone (note: this doesn't modify other agents like webIds)
+ * agents.addPublic()
+ * agents.hasPublic() // true
+ * agents.deletePublic()
+ *
+ * // Shortcut for creating new agents and then calling agents.addPublic()
+ * const publicAgents = Agents.PUBLIC
+ * agents.hasPublic() // true
  */
 class Agents {
   /**

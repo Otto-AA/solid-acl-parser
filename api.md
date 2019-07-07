@@ -61,6 +61,22 @@ Class for storing information of an acl file
 | --- | --- |
 | [options] | <code>AclDocOptions</code> | 
 
+**Example**  
+```js
+// Create a new AclDoc
+// We can specify a default accessTo value here. If not specified we will need to add it to the AclRule's
+const { READ } = Permissions
+const webId = 'https://solid.example.org/profile/card#me'
+
+const doc = new AclDoc({ defaultAccessTo: 'https://solid.example.org/foo/file.ext' })
+
+// Give one user all permissions (READ, WRITE, APPEND and CONTROL)
+// We can add a subjectId, else it will be generated automatically
+doc.addRule(new AclRule(Permissions.ALL, webId), '#owner')
+
+// Give everyone read access
+doc.addRule(new AclRule(READ, Agents.PUBLIC))
+```
 <a name="module_AclDoc--AclDoc+rules"></a>
 
 #### aclDoc.rules : <code>Object.&lt;string, AclRule&gt;</code>
@@ -81,6 +97,13 @@ Class for storing information of an acl file
 | [accessTo] | <code>string</code> | 
 | [subjectId] | <code>string</code> | 
 
+**Example**  
+```js
+const rule = new AclRule(new Permissions(READ, WRITE), new Agents('https://my.web.id/#me'))
+doc.addRule(rule)
+// addRule uses AclRule.from which means we could use following too
+doc.addRule([READ, WRITE], 'https://my.web.id/#me')
+```
 <a name="module_AclDoc--AclDoc+hasRule"></a>
 
 #### aclDoc.hasRule(rule) ⇒ <code>boolean</code>
@@ -91,6 +114,14 @@ Class for storing information of an acl file
 | --- | --- |
 | rule | <code>AclRule</code> | 
 
+**Example**  
+```js
+doc.addRule([READ, WRITE], ['https://first.web.id', 'https://second.web.id'])
+doc.hasRule(READ, 'https://first.web.id') // true
+doc.hasRule([READ, WRITE], ['https://first.web.id', 'https://second.web.id']) // true
+doc.hasRule(CONTROL, 'https://first.web.id') // false
+doc.hasRule(READ, 'https://third.web.id') // false
+```
 <a name="module_AclDoc--AclDoc+deleteRule"></a>
 
 #### aclDoc.deleteRule(rule)
@@ -100,6 +131,14 @@ Class for storing information of an acl file
 | --- | --- |
 | rule | <code>AclRule</code> | 
 
+**Example**  
+```js
+doc.addRule([READ, WRITE], ['https://first.web.id', 'https://second.web.id'])
+doc.deleteRule(READ, 'https://first.web.id')
+doc.hasRule(READ, 'https://first.web.id') // false
+doc.hasRule(WRITE, 'https://first.web.id') // true
+doc.hasRule([READ, WRITE], 'https://second.web.id') // true
+```
 <a name="module_AclDoc--AclDoc+deleteBySubject"></a>
 
 #### aclDoc.deleteBySubject(subjectId, [rule])
@@ -119,6 +158,14 @@ Class for storing information of an acl file
 | --- | --- |
 | agents | <code>Agents</code> | 
 
+**Example**  
+```js
+// Remove all permissions for one specific webId and public
+const agents = new Agents()
+agents.addWebId('https://web.id')
+agents.addPublic()
+doc.deleteAgents(agents)
+```
 <a name="module_AclDoc--AclDoc+deletePermissions"></a>
 
 #### aclDoc.deletePermissions(permissions)
@@ -128,6 +175,12 @@ Class for storing information of an acl file
 | --- | --- |
 | permissions | <code>Permissions</code> | 
 
+**Example**  
+```js
+// Set that no one (!) will be able to use APPEND on this resource
+// Do not use this with CONTROL, except if you are sure you want that
+doc.deletePermissions(APPEND)
+```
 <a name="module_AclDoc--AclDoc+getPermissionsFor"></a>
 
 #### aclDoc.getPermissionsFor(agents) ⇒ <code>Permissions</code>
@@ -140,6 +193,13 @@ Ignores accessTo
 | --- | --- |
 | agents | <code>Agents</code> | 
 
+**Example**  
+```js
+// Check if a specific user has READ permissions
+const agents = new Agents('https://web.id')
+const permissions = doc.getPermissionsFor(agents)
+permissions.has(READ) // true if the user has read permissions
+```
 <a name="module_AclDoc--AclDoc+getAgentsWith"></a>
 
 #### aclDoc.getAgentsWith(permissions) ⇒ <code>Agents</code>
@@ -149,6 +209,16 @@ Ignores accessTo
 | --- | --- |
 | permissions | <code>Permissions</code> | 
 
+**Example**  
+```js
+// Get all agents which have WRITE permissions
+const permissions = new Permissions(WRITE)
+const agents = doc.getAgentsWith(permissions)
+agents.hasWebId('https://web.id') // true if this user has write permissions
+agents.hasPublic() // true if everyone has write permissions
+// You can iterate over the webIds set if you want to list them all
+[...agents.webIds].forEach(webId => console.log(webId))
+```
 <a name="module_AclDoc--AclDoc+getMinifiedRules"></a>
 
 #### aclDoc.getMinifiedRules() ⇒ <code>Object.&lt;string, AclRule&gt;</code>
@@ -172,6 +242,16 @@ add data which isn't an access restriction
 Create the turtle representation for this acl document
 
 **Kind**: instance method of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
+**Example**  
+```js
+// TODO: Test if this works
+// Update the acl file
+const turtle = doc.toTurtle()
+solid.auth.fetch(aclUrl, {
+  method: 'PUT',
+  body: turtle
+})
+```
 <a name="module_AclDoc--AclDoc+_ruleFromArgs"></a>
 
 #### aclDoc.\_ruleFromArgs() ⇒ <code>AclRule</code>
@@ -211,7 +291,7 @@ Get an unused subject id
         * [.turtleToAclDoc(aclTurtle)](#module_AclParser--AclParser+turtleToAclDoc) ⇒ <code>Promise.&lt;AclDoc&gt;</code>
         * [._parseRules(turtle, ruleCallback, otherCallback)](#module_AclParser--AclParser+_parseRules) ⇒ <code>Promise.&lt;void&gt;</code>
         * [._addQuadToRule(rule, quad)](#module_AclParser--AclParser+_addQuadToRule)
-        * [.aclDocToTurtle(doc)](#module_AclParser--AclParser+aclDocToTurtle) ⇒ <code>string</code>
+        * [.aclDocToTurtle(doc)](#module_AclParser--AclParser+aclDocToTurtle) ⇒ <code>Promise.&lt;string&gt;</code>
         * [._ruleToQuads(subjectId, rule)](#module_AclParser--AclParser+_ruleToQuads) ⇒ <code>Array.&lt;N3.Quad&gt;</code>
 
 <a name="exp_module_AclParser--AclParser"></a>
@@ -228,6 +308,24 @@ Class for parsing a turtle representation of an acl file into an instance of the
 | --- | --- | --- |
 | [baseIRI] | <code>string</code> | <code>&quot;./&quot;</code> | 
 
+**Example**  
+```js
+// Give a user read permissions to a file
+const fileUrl = 'https://pod.example.org/private/'
+const aclUrl = 'https://pod.example.org/private/file.acl' // Retrieve this from the acl field in the Link header
+const turtle = await solid.auth.fetch(aclUrl)
+
+const parser = new AclParser({ baseIRI: aclUrl })
+const doc = await parser.turtleToAclDoc(turtle)
+doc.defaultAccessTo = fileUrl
+doc.addRule(READ, 'https://other.web.id')
+
+const newTurtle = await parser.aclDocToTurtle(doc)
+await solid.auth.fetch(aclUrl, { // TODO: Check if this works
+  method: 'PUT',
+  body: newTurtle
+})
+```
 <a name="module_AclParser--AclParser+turtleToAclDoc"></a>
 
 #### aclParser.turtleToAclDoc(aclTurtle) ⇒ <code>Promise.&lt;AclDoc&gt;</code>
@@ -260,7 +358,7 @@ Class for parsing a turtle representation of an acl file into an instance of the
 
 <a name="module_AclParser--AclParser+aclDocToTurtle"></a>
 
-#### aclParser.aclDocToTurtle(doc) ⇒ <code>string</code>
+#### aclParser.aclDocToTurtle(doc) ⇒ <code>Promise.&lt;string&gt;</code>
 **Kind**: instance method of [<code>AclParser</code>](#exp_module_AclParser--AclParser)  
 
 | Param | Type |
@@ -313,6 +411,21 @@ Groups together permissions, agents and other relevant information for an acl ru
 | [accessTo] | <code>Array.&lt;string&gt;</code> \| <code>string</code> | <code>[]</code> | 
 | options | <code>AclRuleOptions</code> |  | 
 
+**Example**  
+```js
+// Store some data in an AclRule
+const { READ, WRITE } = Permissions
+const webId = 'https://solid.example.org/profile/card#me'
+const accessTo = 'https://solid.pod.org/foo/file.ext' // Could be an array
+
+const permissions = new Permissions(READ, WRITE)
+const agents = new Agents()
+const rule = new AclRule(permissions, agents, accessTo)
+
+// The constructor uses Permissions.from and Agents.from
+// Therefore we can also specify permissions and webIds like this:
+const rule = new AclRule([READ, WRITE], [webId], accessTo)
+```
 <a name="module_AclRule--AclRule+clone"></a>
 
 #### aclRule.clone() ⇒ <code>AclRule</code>
@@ -447,6 +560,26 @@ class describing multiple agents
 | --- | --- |
 | [...webIds] | <code>string</code> | 
 
+**Example**  
+```js
+const webId = 'https://solid.example.org/profile/card#me'
+const secondWebId = 'https://second.example.org/profile/card#me'
+const agents = new Agents(webId) // You can pass zero or more webIds to the constructor
+
+// Add a single web id
+agents.addWebId(secondWebId)
+agents.hasWebId(webId, secondWebId) // true
+agents.deleteWebId(webId)
+
+// Target everyone (note: this doesn't modify other agents like webIds)
+agents.addPublic()
+agents.hasPublic() // true
+agents.deletePublic()
+
+// Shortcut for creating new agents and then calling agents.addPublic()
+const publicAgents = Agents.PUBLIC
+agents.hasPublic() // true
+```
 <a name="module_Agents--Agents+addWebId"></a>
 
 #### agents.addWebId([...webIds]) ⇒ <code>this</code>
@@ -644,6 +777,22 @@ Return all agents from the first which are not in the second
 | --- | --- |
 | ...permissions | <code>string</code> | 
 
+**Example**  
+```js
+const { READ, WRITE, APPEND, CONTROL } = Permissions
+// Create a new permissions instance with READ and WRITE permission
+const permissions = new Permissions(READ, WRITE)
+permissions.add(APPEND)
+permissions.has(READ, WRITE, APPEND) // true
+permissions.delete(APPEND)
+permissions.has(APPEND) // false
+
+// It has an inbuilt iterator which allows a for-each loop and using the spread syntax
+for (const perm of permissions) {
+  console.log(perm)
+}
+[...perm].forEach(perm => console.log(perm))
+```
 <a name="module_Permissions--Permissions+permissions"></a>
 
 #### permissions.permissions : <code>Set.&lt;string&gt;</code>
