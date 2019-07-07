@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "docs": "jsdoc2md src/*.js > api.md",
+    "version": "npm run docs"
   },
   "author": "",
   "license": "ISC",
@@ -17,6 +19,7 @@
     "babel-loader": "^8.0.6",
     "babel-polyfill": "^6.26.0",
     "jest": "^24.8.0",
+    "jsdoc-to-markdown": "^5.0.0",
     "regenerator-runtime": "^0.13.2",
     "standard": "^12.0.1",
     "webpack": "^4.35.0",

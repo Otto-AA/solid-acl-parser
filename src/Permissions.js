@@ -1,6 +1,10 @@
 import prefixes from './prefixes'
 import { iterableEquals } from './utils'
 
+/**
+ * @module Permissions
+ */
+
 const permissionLinks = {
   READ: `${prefixes.acl}Read`,
   WRITE: `${prefixes.acl}Write`,
@@ -8,7 +12,10 @@ const permissionLinks = {
   CONTROL: `${prefixes.acl}Control`
 }
 
-export default class Permissions {
+/**
+ * @alias module:Permissions
+ */
+class Permissions {
   /**
    * @param  {...string} permissions
    */
@@ -156,3 +163,5 @@ export default class Permissions {
 
   static get ALL () { return new Permissions(...Object.values(permissionLinks)) }
 }
+
+export default Permissions

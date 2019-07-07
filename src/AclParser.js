@@ -3,6 +3,10 @@ import AclDoc from './AclDoc'
 import prefixes from './prefixes'
 import AclRule from './AclRule'
 
+/**
+ * @module AclParser
+ */
+
 const predicates = {
   mode: `${prefixes.acl}mode`,
   agent: `${prefixes.acl}agent`,
@@ -25,8 +29,9 @@ const types = {
 
 /**
  * @description Class for parsing a turtle representation of an acl file into an instance of the Acl class
+ * @alias module:AclParser
  */
-export default class AclParser {
+class AclParser {
   /**
    * @param {string} [baseIRI]
    */
@@ -266,3 +271,5 @@ export default class AclParser {
     return quads
   }
 }
+
+export default AclParser

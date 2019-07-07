@@ -1,9 +1,14 @@
 import { iterableEquals } from './utils'
 
 /**
- * @description class describing multiple agents
+ * @module Agents
  */
-export default class Agents {
+
+/**
+ * @description class describing multiple agents
+ * @alias module:Agents
+ */
+class Agents {
   /**
    * @param {...string} [webIds]
    */
@@ -254,3 +259,5 @@ export default class Agents {
     return agents
   }
 }
+
+export default Agents

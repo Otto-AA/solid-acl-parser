@@ -3,9 +3,10 @@ import Permissions from './Permissions'
 import AclRule from './AclRule'
 import AclParser from './AclParser'
 
-/** @typedef {import("./AclRule").default} AclRule */
-/** @typedef {import("./Permissions").default} Permissions */
-/** @typedef {import("n3").Quad} Quad */
+/**
+ * @module AclDoc
+ */
+// /** @typedef {import("n3").Quad} Quad */
 
 /**
  * @typedef {object} AclDocOptions
@@ -14,15 +15,16 @@ import AclParser from './AclParser'
 
 /**
  * @description Class for storing information of an acl file
+ * @alias module:AclDoc
  */
-export default class AclDoc {
+class AclDoc {
   /**
    * @param {AclDocOptions} [options]
    */
   constructor (options = {}) {
     this.defaultAccessTo = options.defaultAccessTo
 
-    /** @type {{[subjectId: string]: AclRule}} */
+    /** @type {Object.<string, AclRule>} */
     this.rules = {}
     /** @type {Quad[]} */
     this.otherQuads = []
@@ -154,7 +156,7 @@ export default class AclDoc {
 
   /**
    * @description Use this to get all rules for converting to turtle
-   * @returns {{[ subjectId: string]: AclRule}}
+   * @returns {Object.<string, AclRule>}
    */
   getMinifiedRules () {
     // TODO
@@ -223,3 +225,5 @@ export default class AclDoc {
     return base + index
   }
 }
+
+export default AclDoc

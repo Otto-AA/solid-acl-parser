@@ -2,8 +2,11 @@ import Permissions from './Permissions'
 import Agents from './Agents'
 import { iterableEquals } from './utils'
 
-/** @typedef {import("n3").Quad} Quad */
-/** @typedef {import("./AclRule").default} AclRule */
+/**
+ * @module AclRule
+ */
+// /** @typedef {import("n3").Quad} Quad */
+// /** @typedef {import("./AclRule").default} AclRule */
 
 /**
  * @typedef {object} AclRuleOptions
@@ -14,8 +17,9 @@ import { iterableEquals } from './utils'
 
 /**
  * @description Groups together permissions, agents and other relevant information for an acl rule
+ * @alias module:AclRule
  */
-export default class AclRule {
+class AclRule {
   /**
    * @param {Permissions} permissions
    * @param {Agents} agents
@@ -144,3 +148,5 @@ export default class AclRule {
     return rules.filter(rule => !rule.hasNoEffect())
   }
 }
+
+export default AclRule
