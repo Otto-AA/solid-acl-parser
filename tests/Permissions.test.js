@@ -60,7 +60,6 @@ describe('add and delete permissions', () => {
     })
     test('throws error with invalid arguments', () => {
       expect(() => Permissions.from(3)).toThrowError(/Invalid arguments/)
-      expect(() => Permissions.from(null)).toThrowError(/Invalid arguments/)
       expect(() => Permissions.from({})).toThrowError(/Invalid arguments/)
     })
   })

@@ -227,6 +227,40 @@ describe('getAgentsWith', () => {
   })
 })
 
+describe('equals', () => {
+  test('returns false for docs with different accessTo values', () => {
+    const otherDoc = new AclDoc({ accessTo: 'different' })
+    expect(doc.equals(otherDoc)).toBe(false)
+  })
+  test('returns true for empty docs with same accessTo values', () => {
+    const otherDoc = new AclDoc({ accessTo })
+    expect(doc.equals(otherDoc)).toBe(true)
+  })
+  test('returns true for docs which have been added the same rules', () => {
+    const otherDoc = new AclDoc({ accessTo })
+    doc.addRule(sampleRules[0])
+      .addRule(sampleRules[1])
+    otherDoc.addRule(sampleRules[0])
+      .addRule(sampleRules[1])
+
+    expect(doc.equals(otherDoc)).toBe(true)
+  })
+  test('returns false for docs which have been added different rules', () => {
+    const otherDoc = new AclDoc({ accessTo })
+    doc.addRule(sampleRules[1])
+      .addRule(sampleRules[0])
+    otherDoc.addRule(sampleRules[1])
+      .addRule(sampleRules[2])
+
+    expect(doc.equals(otherDoc)).toBe(false)
+  })
+  test('returns false if otherQuads are not the same', () => {
+    const otherDoc = new AclDoc({ accessTo })
+    doc.addOther('test')
+    expect(doc.equals(otherDoc)).toBe(false)
+  })
+})
+
 describe('addOther', () => {
   test('adds quad to otherQuads', () => {
     const quads = [1, 2, 3, 4]

@@ -2,6 +2,7 @@ import N3 from 'n3'
 import AclDoc from './AclDoc'
 import prefixes from './prefixes'
 import AclRule from './AclRule'
+import { parseTurtle } from './utils'
 
 /**
  * @module AclParser
@@ -68,68 +69,46 @@ class AclParser {
    * @returns {Promise<AclDoc>}
    */
   async turtleToAclDoc (aclTurtle) {
+    const data = await parseTurtle(this.parser, aclTurtle)
     const doc = new AclDoc({ accessTo: this.accessTo })
-    await this._parseRules(aclTurtle,
-      (subjectId, rule) => doc.addRule(rule, null, { subjectId }),
-      otherQuad => doc.addOther(otherQuad))
+
+    for (const [subjectId, quads] of Object.entries(data)) {
+      if (this._isAclRule(quads)) {
+        const aclRule = this._quadsToRule(quads)
+        doc.addRule(aclRule, null, { subjectId })
+      } else {
+        doc.addOther(...quads)
+      }
+    }
 
     return doc
   }
 
   /**
-   * @param {string} turtle
-   * @param {function} ruleCallback
-   * @param {function} otherCallback
-   * @returns {Promise<void>}
+   * @param {N3.Quad[]} quads
+   * @returns {AclRule}
    */
-  _parseRules (turtle, ruleCallback, otherCallback) {
-    // Describes one block of statements
-    const curBlock = {
-      subj: null,
-      rule: null,
-      isAuthorizationType: false,
-      quads: []
+  _quadsToRule (quads) {
+    const rule = new AclRule()
+
+    for (const quad of quads) {
+      if (Object.values(predicates).includes(quad.predicate.id)) {
+        this._addQuadToRule(rule, quad)
+      } else {
+        rule.otherQuads.push(quad)
+      }
     }
+    return rule
+  }
 
-    return new Promise((resolve, reject) => {
-      this.parser.parse(turtle, (error, quad, prefixes) => {
-        if (error) {
-          return reject(error)
-        }
-
-        // N3 returns quad=null when finished
-        if (quad === null) {
-          if (curBlock.isAuthorizationType) {
-            ruleCallback(curBlock.subj, curBlock.rule)
-          } else {
-            curBlock.quads.forEach(quad => otherCallback(quad))
-          }
-          return resolve()
-        }
-
-        const { subject, predicate, object } = quad
-        curBlock.quads.push(quad)
-
-        // Handle multiple blocks
-        if (curBlock.subj !== subject.id) {
-          if (curBlock.isAuthorizationType) {
-            ruleCallback(curBlock.subj, curBlock.rule)
-          } else if (curBlock.subj !== null) {
-            curBlock.quads.forEach(quad => otherCallback(quad))
-          }
-          curBlock.subj = subject.id
-          curBlock.rule = new AclRule()
-          curBlock.isAuthorizationType = false
-          curBlock.quads = []
-        }
-
-        // Handle quad
-        if (predicate.id === predicates.type) {
-          curBlock.isAuthorizationType = (object.value === types.authorization)
-        } else if (Object.values(predicates).includes(predicate.id)) {
-          this._addQuadToRule(curBlock.rule, quad)
-        }
-      })
+  /**
+   * @param {N3.Quad[]} quads
+   * @returns {boolean}
+   */
+  _isAclRule (quads) {
+    return quads.some(({ predicate, object: { value } }) => {
+      return predicate.id === predicates.type &&
+        value === types.authorization
     })
   }
 
@@ -181,6 +160,9 @@ class AclParser {
       case predicates.defaultForNew:
         rule.defaultForNew = value
         rule.default = value
+        break
+
+      case predicates.type:
         break
 
       default:

@@ -129,8 +129,8 @@ class Permissions {
     if (firstVal instanceof Permissions) {
       return firstVal.clone()
     }
-    if (typeof firstVal === 'string' || typeof firstVal === 'undefined') {
-      return new Permissions(...val.filter(v => typeof v !== 'undefined'))
+    if (typeof firstVal === 'string' || !firstVal) {
+      return new Permissions(...val.filter(v => !!v))
     }
     if (Array.isArray(firstVal)) {
       return new Permissions(...firstVal)

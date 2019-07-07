@@ -47,3 +47,32 @@ export function arrayIncludesArray (a, b) {
     })
   })
 }
+
+/**
+ * @description parse all data from a turtle file and groups it by subjectIds
+ * @param {N3.N3Parser} parser
+ * @param {string} turtle
+ * @returns {Object.<string, N3.Quad[]>}
+ */
+export function parseTurtle (parser, turtle) {
+  /** @type {Object.<string, N3.Quad[]>} */
+  const data = {}
+
+  return new Promise((resolve, reject) => {
+    parser.parse(turtle, (error, quad) => {
+      if (error) {
+        return reject(error)
+      }
+
+      if (quad === null) {
+        return resolve(data)
+      }
+
+      const subjectId = quad.subject.id
+      if (!data.hasOwnProperty(subjectId)) {
+        data[subjectId] = []
+      }
+      data[subjectId].push(quad)
+    })
+  })
+}

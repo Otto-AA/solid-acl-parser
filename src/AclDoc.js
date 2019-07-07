@@ -1,6 +1,7 @@
 import Agents from './Agents'
 import Permissions from './Permissions'
 import AclRule from './AclRule'
+import { iterableEquals } from './utils';
 
 /**
  * @module AclDoc
@@ -9,7 +10,7 @@ import AclRule from './AclRule'
 
 /**
  * @typedef {object} AclDocOptions
- * @property {string} [defaultAccessTo] - Url to the file/folder which will be granted access to
+ * @property {string} accessTo - Url to the file/folder which will be granted access to
  */
 
 /**
@@ -28,7 +29,7 @@ const defaultSubjectIdBase = 'acl-utils-rule-'
  * const { READ } = Permissions
  * const webId = 'https://solid.example.org/profile/card#me'
  *
- * const doc = new AclDoc({ defaultAccessTo: 'https://solid.example.org/foo/file.ext' })
+ * const doc = new AclDoc({ accessTo: 'https://solid.example.org/foo/file.ext' })
  *
  * // Give one user all permissions (READ, WRITE, APPEND and CONTROL)
  * // We can add a subjectId, else it will be generated automatically
@@ -40,7 +41,7 @@ const defaultSubjectIdBase = 'acl-utils-rule-'
  */
 class AclDoc {
   /**
-   * @param {AclDocOptions} [options]
+   * @param {AclDocOptions} options
    */
   constructor ({ accessTo }) {
     this.accessTo = accessTo
@@ -268,6 +269,20 @@ class AclDoc {
   addOther (...other) {
     this.otherQuads.push(...other)
     return this
+  }
+
+  /**
+   * @param {AclDoc} other
+   * @returns {boolean}
+   */
+  equals (other) {
+    return this.accessTo === other.accessTo &&
+      iterableEquals(this.otherQuads, other.otherQuads) &&
+      Object.entries(this.rules)
+        .every(([subjectId, rule]) => {
+          const otherRule = other.getRuleBySubjectId(subjectId)
+          return typeof otherRule !== 'undefined' && rule.equals(otherRule)
+        })
   }
 
   /**

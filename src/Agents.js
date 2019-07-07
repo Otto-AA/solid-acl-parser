@@ -196,8 +196,8 @@ class Agents {
     if (firstVal instanceof Agents) {
       return firstVal.clone()
     }
-    if (typeof firstVal === 'string' || typeof firstVal === 'undefined') {
-      return new Agents(...val.filter(v => typeof v !== 'undefined'))
+    if (typeof firstVal === 'string' || !firstVal) {
+      return new Agents(...val.filter(v => !!v))
     }
     if (Array.isArray(firstVal)) {
       return new Agents(...firstVal)

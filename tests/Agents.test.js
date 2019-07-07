@@ -192,8 +192,6 @@ describe('meta methods', () => {
       expect(Agents.from(sampleWebIds).hasWebId(...sampleWebIds)).toBe(true)
     })
     test('throws error if invalid arguments are passed', () => {
-      expect(() => Agents.from(0)).toThrowError(/Invalid arguments/)
-      expect(() => Agents.from(null)).toThrowError(/Invalid arguments/)
       expect(() => Agents.from({})).toThrowError(/Invalid arguments/)
     })
   })
