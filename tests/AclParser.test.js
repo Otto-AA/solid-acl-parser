@@ -19,7 +19,10 @@ beforeAll(() => {
 })
 
 test('can parse sample turtle file', async () => {
-  const parser = new AclParser()
+  const parser = new AclParser({
+    fileUrl: 'https://alice.example.com/docs/shared-file1',
+    aclUrl: 'https://alice.example.com/docs/shared-file1.acl'
+  })
   const doc = await parser.turtleToAclDoc(sampleTurtle)
   const turtle = await parser.aclDocToTurtle(doc)
   expect(typeof turtle).toBe('string')

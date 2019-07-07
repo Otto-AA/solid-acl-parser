@@ -52,7 +52,7 @@ describe('equals', () => {
     const second = new AclRule([READ, WRITE], sampleWebIds.slice(1), sampleAccessTos)
     expect(first.equals(second)).toBe(false)
   })
-  test('returns false if at least one accessTo is different', () => {
+  test.skip('returns false if at least one accessTo is different', () => {
     const first = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos)
     const second = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos.slice(1))
     expect(first.equals(second)).toBe(false)

@@ -68,8 +68,8 @@ class AclRule {
    * @returns {boolean}
    */
   equals (other) {
-    return iterableEquals(this.accessTo, other.accessTo) &&
-      iterableEquals(this.otherQuads, other.otherQuads) &&
+    // TODO: Add accessTo?
+    return iterableEquals(this.otherQuads, other.otherQuads) &&
       this.permissions.equals(other.permissions) &&
       this.agents.equals(other.agents) &&
       this.default === other.default &&

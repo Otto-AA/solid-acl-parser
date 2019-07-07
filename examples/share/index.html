@@ -15,11 +15,11 @@
     <p>Here you can test out how the acl file is modified when it is parsed to an AclDoc and then without any modification parsed backwards to acl (acl -> AclDoc -> acl)</p>
     <p>It is mainly for testing out if nothing gets omitted while parsing, but you can also see the base usage of the parser in this example.</p>
     <form>
-      <label for="baseUri">Url of the acl file</label>
-      <input type="text" id="baseUri" value="./file.acl">
+      <label for="aclUrl">Url of the acl file</label>
+      <input type="text" id="aclUrl" value="./file.ttl.acl">
 
-      <label for="accessTo">Url of the file you want to share</label>
-      <input type="text" id="accessTo" value="./file">
+      <label for="fileUrl">Url of the file you want to share</label>
+      <input type="text" id="fileUrl" placeholder="Please enter the url of the file for which the permissions are changed" value="./file.ttl">
   
       <label for="shareWith">Share with:</label>
       <input type="text" id="shareWith" value="https://solid.example.org/profile/card#me">
@@ -51,10 +51,11 @@
       const parseButton = document.getElementById('parse')
       parseButton.onclick = () => {
         console.log('clicked button')
-        const baseUri = document.getElementById('baseUri').value
+        const aclUrl = document.getElementById('aclUrl').value
+        const fileUrl = document.getElementById('fileUrl').value
         const originalAcl = document.getElementById('aclInput').value
 
-        const parser = new AclParser(baseUri)
+        const parser = new AclParser({ fileUrl, aclUrl })
 
         parser.turtleToAclDoc(originalAcl)
           .then(doc => {
@@ -82,9 +83,7 @@
             const agents = new Agents()
             agents.addWebId(document.getElementById('shareWith').value)
 
-            const accessTo = document.getElementById('accessTo').value
-            const rule = new AclRule(permissions, agents, accessTo)
-            doc.addRule(rule)
+            doc.addRule(new AclRule(permissions, agents))
 
             return parser.aclDocToTurtle(doc)
           })

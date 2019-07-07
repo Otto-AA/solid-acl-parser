@@ -7,6 +7,12 @@ import AclRule from './AclRule'
  * @module AclParser
  */
 
+/**
+ * @typedef AclParserOptions
+ * @property {string} aclUrl - the url of the acl file
+ * @property {string} fileUrl - the file for which the permissions will be parsed
+ */
+
 const predicates = {
   mode: `${prefixes.acl}mode`,
   agent: `${prefixes.acl}agent`,
@@ -36,7 +42,7 @@ const types = {
  * const aclUrl = 'https://pod.example.org/private/file.acl' // Retrieve this from the acl field in the Link header
  * const turtle = await solid.auth.fetch(aclUrl)
  *
- * const parser = new AclParser({ baseIRI: aclUrl })
+ * const parser = new AclParser({ fileUrl, aclUrl })
  * const doc = await parser.turtleToAclDoc(turtle)
  * doc.defaultAccessTo = fileUrl
  * doc.addRule(READ, 'https://other.web.id')
@@ -49,11 +55,12 @@ const types = {
  */
 class AclParser {
   /**
-   * @param {string} [baseIRI]
+   * @param {AclParserOptions} options
    */
-  constructor (baseIRI = './') {
-    this.parser = new N3.Parser({ baseIRI })
+  constructor ({ fileUrl, aclUrl }) {
+    this.parser = new N3.Parser({ baseIRI: aclUrl })
     this.subjectIdCounter = 0
+    this.accessTo = fileUrl
   }
 
   /**
@@ -61,9 +68,9 @@ class AclParser {
    * @returns {Promise<AclDoc>}
    */
   async turtleToAclDoc (aclTurtle) {
-    const doc = new AclDoc()
+    const doc = new AclDoc({ accessTo: this.accessTo })
     await this._parseRules(aclTurtle,
-      (subjectId, rule) => doc.addRule(rule, null, null, subjectId),
+      (subjectId, rule) => doc.addRule(rule, null, { subjectId }),
       otherQuad => doc.addOther(otherQuad))
 
     return doc

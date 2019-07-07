@@ -12,6 +12,11 @@ import AclRule from './AclRule'
  * @property {string} [defaultAccessTo] - Url to the file/folder which will be granted access to
  */
 
+/**
+ * @typedef {object} AddRuleOptions
+ * @property {string} [subjectId]
+ */
+
 const defaultSubjectIdBase = 'acl-utils-rule-'
 
 /**
@@ -37,8 +42,8 @@ class AclDoc {
   /**
    * @param {AclDocOptions} [options]
    */
-  constructor (options = {}) {
-    this.defaultAccessTo = options.defaultAccessTo
+  constructor ({ accessTo }) {
+    this.accessTo = accessTo
 
     /** @type {Object.<string, AclRule>} */
     this.rules = {}
@@ -51,8 +56,7 @@ class AclDoc {
    * If subjectId is specified and already exits the old one will be overwritten
    * @param {Permissions} permissions
    * @param {Agents} agents
-   * @param {string} [accessTo]
-   * @param {string} [subjectId]
+   * @param {AddRuleOptions} [options]
    * @returns {this}
    * @example
    * const rule = new AclRule(new Permissions(READ, WRITE), new Agents('https://my.web.id/#me'))
@@ -60,11 +64,10 @@ class AclDoc {
    * // addRule uses AclRule.from which means we could use following too
    * doc.addRule([READ, WRITE], 'https://my.web.id/#me')
    */
-  addRule (permissions, agents, accessTo, subjectId) {
-    const rule = this._ruleFromArgs(permissions, agents, accessTo)
-    subjectId = subjectId || this._getNewSubjectId()
-
+  addRule (permissions, agents, { subjectId = this._getNewSubjectId() } = {}) {
+    const rule = this._ruleFromArgs(permissions, agents)
     this.rules[subjectId] = rule
+
     return this
   }
 
@@ -194,7 +197,6 @@ class AclDoc {
 
   /**
    * @description Get all permissions a specific group of agents has
-   * Ignores accessTo.
    * Public will not be added automatically to the agents.
    * Only works for single agents
    * @param {Agents} agents
@@ -276,22 +278,10 @@ class AclDoc {
   /**
    * @returns {AclRule}
    */
-  _ruleFromArgs (permission, agents, accessTo) {
-    const rule = AclRule.from(permission, agents, accessTo)
-    if (!rule.accessTo.length) {
-      rule.accessTo.push(this._getDefaultAccessTo())
-    }
+  _ruleFromArgs (permission, agents) {
+    const rule = AclRule.from(permission, agents)
+    rule.accessTo = [ this.accessTo ]
     return rule
-  }
-
-  /**
-   * @returns {string}
-   */
-  _getDefaultAccessTo () {
-    if (!this.defaultAccessTo) {
-      throw new Error('The accessTo value must be specified in the constructor options or directly when calling the methods')
-    }
-    return this.defaultAccessTo
   }
 
   /**

@@ -17,18 +17,12 @@ const sampleRules = [
   new AclRule(WRITE, sampleWebIds[2])
 ]
 
-const sampleAccessTos = [
-  './first.ttl',
-  './second.ttl',
-  './third.ttl'
-]
-
-const defaultAccessTo = 'https://example.org/foo/bar.ext'
+const accessTo = 'https://example.org/foo/bar.ext'
 
 /** @type {AclDoc} */
 let doc
 
-beforeEach(() => { doc = new AclDoc({ defaultAccessTo }) })
+beforeEach(() => { doc = new AclDoc({ accessTo }) })
 
 describe('addRule', () => {
   test('can add rule by passing AclRule instance', () => {
@@ -39,24 +33,13 @@ describe('addRule', () => {
   })
   test('can add rule by passing rule arguments', () => {
     doc.addRule([READ, WRITE], sampleWebIds)
-    doc.addRule(CONTROL, sampleWebIds, undefined, '#my-id')
+    doc.addRule(CONTROL, sampleWebIds, { subjectId: '#my-id' })
     expect(doc.hasRule([READ, WRITE], sampleWebIds)).toBe(true)
     expect(doc.hasRule(CONTROL, sampleWebIds)).toBe(true)
   })
-  test('can overwrite defaultAccessTo from constructor', () => {
-    const rule = new AclRule(READ, sampleWebIds, sampleAccessTos)
-    doc.addRule(rule, undefined, undefined, '#my-id')
-    const storedRule = doc.getRuleBySubjectId('#my-id')
-    expect(storedRule.accessTo).toEqual(sampleAccessTos)
-  })
-  test('throws if accessTo is unknown', () => {
-    // Don't setting defaultAccessTo
-    const noDefaultDoc = new AclDoc()
-    expect(() => noDefaultDoc.addRule(sampleRules[0])).toThrowError(/accessTo/)
-  })
   test('overwrites existing subjectId if specified', () => {
-    doc.addRule(sampleRules[0], undefined, undefined, '#my-id')
-    doc.addRule(sampleRules[1], undefined, undefined, '#my-id')
+    doc.addRule(sampleRules[0], undefined, { subjectId: '#my-id' })
+    doc.addRule(sampleRules[1], undefined, { subjectId: '#my-id' })
     expect(doc.hasRule(sampleRules[0])).toBe(false)
     expect(doc.hasRule(sampleRules[1])).toBe(true)
   })
@@ -81,13 +64,13 @@ describe('hasRule', () => {
     expect(doc.hasRule(WRITE, sampleWebIds[0])).toBe(true)
   })
   test('returns true if rule is stored in multiple subjects', () => {
-    doc.addRule(READ, sampleWebIds[0], undefined, '#first')
-    doc.addRule(WRITE, sampleWebIds[0], undefined, '#second')
+    doc.addRule(READ, sampleWebIds[0], { subjectId: '#first' })
+    doc.addRule(WRITE, sampleWebIds[0], { subjectId: '#second' })
     expect(doc.hasRule([READ, WRITE], sampleWebIds[0])).toBe(true)
   })
   test('returns false if not all permissions are granted', () => {
-    doc.addRule(READ, sampleWebIds[0], undefined, '#first')
-    doc.addRule(WRITE, sampleWebIds[0], undefined, '#second')
+    doc.addRule(READ, sampleWebIds[0], { subjectId: '#first' })
+    doc.addRule(WRITE, sampleWebIds[0], { subjectId: '#second' })
     expect(doc.hasRule([READ, WRITE, CONTROL], sampleWebIds[0])).toBe(false)
   })
   // TODO
@@ -96,8 +79,8 @@ describe('hasRule', () => {
 
 describe('getRuleBySubjectId', () => {
   test('returns rule with this id if existing', () => {
-    const rule = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos)
-    doc.addRule(rule, undefined, undefined, '#my-id')
+    const rule = new AclRule([READ, WRITE], sampleWebIds)
+    doc.addRule(rule, undefined, { subjectId: '#my-id' })
     expect(doc.getRuleBySubjectId('#my-id').equals(rule)).toBe(true)
   })
   test('returns undefined if no rule with that id exists', () => {
@@ -107,17 +90,17 @@ describe('getRuleBySubjectId', () => {
 
 describe('deleteBySubjectId', () => {
   test('deletes completely if no rule is specified', () => {
-    doc.addRule(sampleRules[0], undefined, undefined, '#my-id')
+    doc.addRule(sampleRules[0], undefined, { subjectId: '#my-id' })
     doc.deleteBySubjectId('#my-id')
     expect(Object.keys(doc.rules)).toHaveLength(0)
   })
   test('deletes completely if clone of rule is passed', () => {
-    doc.addRule(sampleRules[0], undefined, undefined, '#my-id')
+    doc.addRule(sampleRules[0], undefined, { subjectId: '#my-id' })
     doc.deleteBySubjectId('#my-id', sampleRules[0].clone())
     expect(Object.keys(doc.rules)).toHaveLength(0)
   })
   test('deletes partial if only permissions differ', () => {
-    doc.addRule([READ, WRITE], sampleWebIds, undefined, '#my-id')
+    doc.addRule([READ, WRITE], sampleWebIds, { subjectId: '#my-id' })
     doc.deleteBySubjectId('#my-id', READ, sampleWebIds)
     const rule = doc.getRuleBySubjectId('#my-id')
     expect(rule).toBeDefined()
@@ -127,7 +110,7 @@ describe('deleteBySubjectId', () => {
     expect(Object.keys(doc.rules)).toHaveLength(1)
   })
   test('deletes partial if only agents differ', () => {
-    doc.addRule([READ, WRITE], sampleWebIds, undefined, '#my-id')
+    doc.addRule([READ, WRITE], sampleWebIds, { subjectId: '#my-id' })
     doc.deleteBySubjectId('#my-id', [READ, WRITE], sampleWebIds.slice(1))
     const rule = doc.getRuleBySubjectId('#my-id')
     expect(rule).toBeDefined()
@@ -137,7 +120,7 @@ describe('deleteBySubjectId', () => {
     expect(Object.keys(doc.rules)).toHaveLength(1)
   })
   test('splits up if permissions and agents differ', () => {
-    doc.addRule([READ, WRITE], sampleWebIds, undefined, '#my-id')
+    doc.addRule([READ, WRITE], sampleWebIds, { subjectId: '#my-id' })
     doc.deleteBySubjectId('#my-id', READ, sampleWebIds[0])
     expect(doc.hasRule([READ, WRITE], sampleWebIds.slice(1))).toBe(true)
     expect(doc.hasRule([READ, WRITE], sampleWebIds[0])).toBe(false)
@@ -263,7 +246,7 @@ describe('getMinifiedRules', () => {
 
 describe('chainable methods', () => {
   test('can chain methods which support it', () => {
-    doc.addRule(READ, Agents.PUBLIC, undefined, '#public')
+    doc.addRule(READ, Agents.PUBLIC, { subjectId: '#public' })
       .addRule(WRITE, sampleWebIds)
       .deleteBySubjectId('#public')
       .deleteAgents(sampleWebIds)
@@ -271,7 +254,7 @@ describe('chainable methods', () => {
 
     expect(Object.keys(doc.rules)).toHaveLength(0)
 
-    doc.addRule(READ, Agents.PUBLIC, undefined, '#public')
+    doc.addRule(READ, Agents.PUBLIC, { subjectId: '#public' })
       .deleteRule(READ, Agents.PUBLIC)
       .addRule([READ, WRITE], sampleWebIds)
       .deletePermissions(READ, WRITE)
