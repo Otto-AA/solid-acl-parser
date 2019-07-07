@@ -1,6 +1,6 @@
 import Permissions from './Permissions'
 import Agents from './Agents'
-import { iterableEquals } from './utils'
+import { iterableEquals, iterableIncludesIterable } from './utils'
 
 /**
  * @module AclRule
@@ -44,6 +44,7 @@ class AclRule {
     this.agents = Agents.from(agents)
     this.accessTo = Array.isArray(accessTo) ? [...accessTo] : [ accessTo ]
     this.otherQuads = [...otherQuads]
+    // TODO: Check if multiple defaults should be supported
     this.default = _default
     this.defaultForNew = defaultForNew
   }
@@ -68,6 +69,7 @@ class AclRule {
    */
   equals (other) {
     return iterableEquals(this.accessTo, other.accessTo) &&
+      iterableEquals(this.otherQuads, other.otherQuads) &&
       this.permissions.equals(other.permissions) &&
       this.agents.equals(other.agents) &&
       this.default === other.default &&
@@ -79,7 +81,8 @@ class AclRule {
    * @returns {boolean}
    */
   includes (other) {
-    return iterableEquals(this.accessTo, other.accessTo) && // TODO: Check if a wildcard accessTo exists
+    return iterableIncludesIterable(this.accessTo, other.accessTo) && // TODO: Check if a wildcard accessTo exists
+      iterableIncludesIterable(this.otherQuads, other.otherQuads) &&
       this.permissions.includes(other.permissions) &&
       this.agents.includes(other.agents) &&
       (this.default === other.default || !other.default) &&
@@ -87,7 +90,8 @@ class AclRule {
   }
 
   /**
-   * @description Return true when this rule has no effect (No permissions or no agents or no targets)
+   * @description Return true when this rule has no effect (No permissions or no agents or no targets).
+   * To prevent unexpected errors it will return false if any unknown statements (quads) are stored
    * @returns {boolean}
    */
   hasNoEffect () {
@@ -122,10 +126,11 @@ class AclRule {
     const permissions = Permissions.common(first.permissions, second.permissions)
     const agents = Agents.common(first.agents, second.agents)
     const accessTo = first.accessTo.filter(val => second.accessTo.includes(val))
-    const otherQuads = first.otherQuads.filter(quad => second.otherQuads.some(otherQuad => quad.equals(otherQuad)))
-    const _default = (first.default === second.default) ? first.default : undefined
-    const defaultForNew = (first.defaultForNew === second.defaultForNew) ? first.defaultForNew : undefined
-    const options = { otherQuads, default: _default, defaultForNew }
+
+    const options = {}
+    options.otherQuads = first.otherQuads.filter(quad => second.otherQuads.some(otherQuad => quad.equals(otherQuad)))
+    options.default = (first.default === second.default) ? first.default : undefined
+    options.defaultForNew = (first.defaultForNew === second.defaultForNew) ? first.defaultForNew : undefined
 
     return new AclRule(permissions, agents, accessTo, options)
   }
@@ -136,7 +141,8 @@ class AclRule {
    * accessTo and otherQuads will be set to the first one
    * @param {AclRule} first
    * @param {AclRule} second
-   * @returns {AclRule[]}
+   * @returns {AclRule[]} Array containing zero, one or two AclRule instances.
+   * If two are returned, the first one is the rule for the unaffected agents
    * @example
    * const first = new AclRule([READ, WRITE], ['web', 'id'])
    * const second = new AclRule(READ, 'web')
@@ -150,13 +156,16 @@ class AclRule {
     /** @type {AclRule[]} */
     const rules = []
 
+    // Add rule for all unaffected agents
     // e.g. AclRule([READ, WRITE], ['web', 'id']) - AclRule([READ, WRITE], 'web') = AclRule([READ, WRITE], 'id')
-    const agents = Agents.subtract(first.agents, second.agents)
-    rules.push(new AclRule(first.permissions, agents, first.accessTo, first.otherQuads))
+    const unaffectedAgents = Agents.subtract(first.agents, second.agents)
+    rules.push(new AclRule(first.permissions, unaffectedAgents, first.accessTo, first.otherQuads))
 
+    // Add rule for all unaffected permissions but affected agents
     // e.g. AclRule([READ, WRITE], 'web') - AclRule(READ, 'web') = AclRule(READ, 'web')
-    const permissions = Permissions.subtract(first.permissions, second.permissions)
-    rules.push(new AclRule(permissions, first.agents, first.accessTo, first.otherQuads))
+    const unaffectedPermissions = Permissions.subtract(first.permissions, second.permissions)
+    const commonAgents = Agents.common(first.agents, second.agents)
+    rules.push(new AclRule(unaffectedPermissions, commonAgents, first.accessTo, first.otherQuads))
 
     return rules.filter(rule => !rule.hasNoEffect())
   }
