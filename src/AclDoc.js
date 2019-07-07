@@ -1,7 +1,6 @@
 import Agents from './Agents'
 import Permissions from './Permissions'
 import AclRule from './AclRule'
-import AclParser from './AclParser'
 
 /**
  * @module AclDoc
@@ -12,6 +11,8 @@ import AclParser from './AclParser'
  * @typedef {object} AclDocOptions
  * @property {string} [defaultAccessTo] - Url to the file/folder which will be granted access to
  */
+
+const defaultSubjectIdBase = 'acl-utils-rule-'
 
 /**
  * @description Class for storing information of an acl file
@@ -46,10 +47,13 @@ class AclDoc {
   }
 
   /**
+   * @description Adds a new rule.
+   * If subjectId is specified and already exits the old one will be overwritten
    * @param {Permissions} permissions
    * @param {Agents} agents
    * @param {string} [accessTo]
    * @param {string} [subjectId]
+   * @returns {this}
    * @example
    * const rule = new AclRule(new Permissions(READ, WRITE), new Agents('https://my.web.id/#me'))
    * doc.addRule(rule)
@@ -58,9 +62,10 @@ class AclDoc {
    */
   addRule (permissions, agents, accessTo, subjectId) {
     const rule = this._ruleFromArgs(permissions, agents, accessTo)
-
     subjectId = subjectId || this._getNewSubjectId()
+
     this.rules[subjectId] = rule
+    return this
   }
 
   /**
@@ -74,27 +79,34 @@ class AclDoc {
    * doc.hasRule(READ, 'https://third.web.id') // false
    */
   hasRule (...args) {
-    // rulesToCheck contains all semi rules which aren't found yet
+    // A rule may be split up across multiple subject groups
+    // Therefore we allow splitting it up and then checking the smaller rules
     let rulesToCheck = [ this._ruleFromArgs(...args) ]
 
-    for (const r of Object.values(this.rules)) {
-      const newRulesToCheck = []
-      while (rulesToCheck.length) {
-        const rule = rulesToCheck.pop()
-        newRulesToCheck.push(...AclRule.subtract(rule, r))
-      }
-      rulesToCheck = newRulesToCheck
+    return Object.values(this.rules)
+      .some(existingRule => {
+        const newRulesToCheck = []
+        for (const rule of rulesToCheck) {
+          newRulesToCheck.push(...AclRule.subtract(rule, existingRule))
+        }
+        rulesToCheck = newRulesToCheck
 
-      if (rulesToCheck.length === 0) {
-        return true
-      }
-    }
+        return rulesToCheck.length === 0
+      })
+  }
 
-    return false
+  /**
+   * @description Get the rule with this subject id
+   * @param  {string} subjectId
+   * @returns {AclRule|undefined}
+   */
+  getRuleBySubjectId (subjectId) {
+    return this.rules[subjectId]
   }
 
   /**
    * @param {AclRule} rule
+   * @returns {this}
    * @example
    * doc.addRule([READ, WRITE], ['https://first.web.id', 'https://second.web.id'])
    * doc.deleteRule(READ, 'https://first.web.id')
@@ -106,17 +118,23 @@ class AclDoc {
     const toDelete = this._ruleFromArgs(...args)
 
     for (const subjectId of Object.keys(this.rules)) {
-      this.deleteBySubject(subjectId, toDelete)
+      this.deleteBySubjectId(subjectId, toDelete)
     }
+
+    return this
   }
 
   /**
    * @param {string} subjectId
    * @param {AclRule} [rule] - if not specified it will delete the entire subject group
+   * @returns {this}
    */
-  deleteBySubject (subjectId, rule) {
+  deleteBySubjectId (subjectId, ...args) {
+    const ignoreRule = !args.length
+    const rule = !ignoreRule ? this._ruleFromArgs(...args) : null
+
     if (this.rules.hasOwnProperty(subjectId)) {
-      if (!rule) {
+      if (ignoreRule) {
         // Delete whole subject group
         delete this.rules[subjectId]
       } else {
@@ -137,10 +155,13 @@ class AclDoc {
         }
       }
     }
+
+    return this
   }
 
   /**
    * @param {Agents} agents
+   * @returns {this}
    * @example
    * // Remove all permissions for one specific webId and public
    * const agents = new Agents()
@@ -150,27 +171,32 @@ class AclDoc {
    */
   deleteAgents (agents) {
     this.deleteRule(new AclRule(Permissions.ALL, agents))
+    return this
   }
 
   /**
    * @param {Permissions} permissions
+   * @returns {this}
    * @example
    * // Set that no one (!) will be able to use APPEND on this resource
    * // Do not use this with CONTROL, except if you are sure you want that
    * doc.deletePermissions(APPEND)
    */
-  deletePermissions (permissions) {
-    permissions = Permissions.from(permissions)
+  deletePermissions (...permissions) {
+    permissions = Permissions.from(...permissions)
 
     for (const [subjectId, rule] of Object.entries(this.rules)) {
       const toDelete = new AclRule(permissions, rule.agents)
-      this.deleteBySubject(subjectId, toDelete)
+      this.deleteBySubjectId(subjectId, toDelete)
     }
+    return this
   }
 
   /**
    * @description Get all permissions a specific group of agents has
-   * Ignores accessTo
+   * Ignores accessTo.
+   * Public will not be added automatically to the agents.
+   * Only works for single agents
    * @param {Agents} agents
    * @returns {Permissions}
    * @example
@@ -182,10 +208,19 @@ class AclDoc {
   getPermissionsFor (agents) {
     agents = Agents.from(agents)
 
-    return Object.values(this.rules)
-      .filter(rule => rule.agents.includes(agents))
-      .map(rule => rule.permissions)
-      .reduce(Permissions.merge) // TODO: Check if this works
+    // TODO: Check if a more efficient way exists to do this
+    const permissions = new Permissions()
+    for (const perm of Permissions.ALL) {
+      if (this.getAgentsWith(perm).includes(agents)) {
+        permissions.add(perm)
+      }
+    }
+    return permissions
+
+    // return Object.values(this.rules)
+    //   .filter(rule => rule.agents.includes(agents))
+    //   .map(rule => rule.permissions)
+    //   .reduce(Permissions.merge, Permissions.from()) // TODO: Check if this works
   }
 
   /**
@@ -206,45 +241,31 @@ class AclDoc {
     return Object.values(this.rules)
       .filter(rule => rule.permissions.includes(permissions))
       .map(rule => rule.agents)
-      .reduce(Agents.merge) // TODO: Check if this works
+      .reduce(Agents.merge, Agents.from()) // TODO: Check if this works
   }
 
   /**
-   * @description Use this to get all rules for converting to turtle
-   * @returns {Object.<string, AclRule>}
+   * @description Delete all unused rules
+   * @returns {this}
    */
-  getMinifiedRules () {
+  minimizeRules () {
     // TODO
     for (const [subjectId, rule] of Object.entries(this.rules)) {
       if (rule.hasNoEffect()) {
         delete this.rules[subjectId]
       }
     }
-    return this.rules
+    return this
   }
 
   /**
    * @description add data which isn't an access restriction
-   * @param {Quad} other
+   * @param {...Quad} other
+   * @returns {this}
    */
-  addOther (other) {
-    this.otherQuads.push(other)
-  }
-
-  /**
-   * @description Create the turtle representation for this acl document
-   * @example
-   * // TODO: Test if this works
-   * // Update the acl file
-   * const turtle = doc.toTurtle()
-   * solid.auth.fetch(aclUrl, {
-   *   method: 'PUT',
-   *   body: turtle
-   * })
-   */
-  toTurtle () {
-    const parser = new AclParser()
-    return parser.aclDocToTurtle(this)
+  addOther (...other) {
+    this.otherQuads.push(...other)
+    return this
   }
 
   /**
@@ -275,10 +296,10 @@ class AclDoc {
 
   /**
    * @description Get an unused subject id
-   * @param {string} [base='new-acl-rule'] - The newly generated id will begin with this base id
+   * @param {string} [base] - The newly generated id will begin with this base id
    * @returns {string}
    */
-  _getNewSubjectId (base = 'new-acl-rule-1') {
+  _getNewSubjectId (base = defaultSubjectIdBase) {
     let index = Number(base.match(/[\d]*$/)[0]) // Last positive number; 0 if not ending with number
     base = base.replace(/[\d]*$/, '')
 

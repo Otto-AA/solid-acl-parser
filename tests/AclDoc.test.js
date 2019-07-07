@@ -3,93 +3,281 @@ import AclRule from '../src/AclRule'
 import Permissions from '../src/Permissions'
 import Agents from '../src/Agents'
 
-const { READ, WRITE, APPEND } = Permissions
+const { READ, WRITE, APPEND, CONTROL } = Permissions
+
+const sampleWebIds = [
+  'https://example.first/#me',
+  'https://example.second#me',
+  'https://example.third/#me'
+]
 
 const sampleRules = [
-  new AclRule(READ, 'https://example.first/#me'),
-  new AclRule([READ, WRITE], 'https://example.second#me'),
-  new AclRule(WRITE, 'https://example.third/#me')
+  new AclRule(READ, sampleWebIds[0]),
+  new AclRule([READ, WRITE], sampleWebIds[1]),
+  new AclRule(WRITE, sampleWebIds[2])
+]
+
+const sampleAccessTos = [
+  './first.ttl',
+  './second.ttl',
+  './third.ttl'
 ]
 
 const defaultAccessTo = 'https://example.org/foo/bar.ext'
 
-describe('add and delete rules', () => {
-  test('can add and delete multiple rules', () => {
-    const doc = new AclDoc({ defaultAccessTo })
-    sampleRules.forEach(rule => doc.addRule(rule))
-    sampleRules.forEach(rule => expect(doc.hasRule(rule)).toBe(true))
+/** @type {AclDoc} */
+let doc
 
-    doc.deletePermissions(WRITE)
+beforeEach(() => { doc = new AclDoc({ defaultAccessTo }) })
+
+describe('addRule', () => {
+  test('can add rule by passing AclRule instance', () => {
+    doc.addRule(sampleRules[0])
+    doc.addRule(sampleRules[1], '#my-id')
     expect(doc.hasRule(sampleRules[0])).toBe(true)
-    expect(doc.hasRule(sampleRules[1])).toBe(false)
-    expect(doc.hasRule(sampleRules[2])).toBe(false)
-
-    doc.deleteAgents(sampleRules[0].agents)
-    sampleRules.forEach(rule => expect(doc.hasRule(rule)).toBe(false))
-    expect(doc.hasRule(READ, sampleRules[1].agents)).toBe(true)
+    expect(doc.hasRule(sampleRules[1])).toBe(true)
   })
-  describe('delete', () => {
-    test('deleteRule only affects specified permissions and agents', () => {
-      const firstAgent = 'https://example.first#me'
-      const secondAgent = 'https://example.second#me'
-      const thirdAgent = 'https://example.third#me'
-      const rules = [
-        new AclRule(READ, firstAgent),
-        new AclRule([READ, WRITE], secondAgent),
-        new AclRule(WRITE, thirdAgent)
-      ]
-      const doc = new AclDoc({ defaultAccessTo })
-      rules.forEach(rule => doc.addRule(rule))
-
-      doc.deleteRule(WRITE, [secondAgent, thirdAgent])
-
-      expect(doc.hasRule(READ, firstAgent)).toBe(true)
-      expect(doc.hasRule(READ, secondAgent)).toBe(true)
-      expect(doc.hasRule(WRITE, secondAgent)).toBe(false)
-      expect(doc.hasRule(WRITE, thirdAgent)).toBe(false)
-    })
-    test('deletePermissions only affects specified permissions', () => {
-      const rule = new AclRule([READ, WRITE], 'https://example.second#me')
-      const doc = new AclDoc({ defaultAccessTo })
-      doc.addRule(rule)
-      doc.deletePermissions(READ)
-      expect(doc.hasRule(READ, rule.agents)).toBe(false)
-      expect(doc.hasRule(WRITE, rule.agents)).toBe(true)
-    })
-    test('deleteAgents only affects specified agents', () => {
-      const firstAgent = 'https://example.first#me'
-      const secondAgent = 'https://example.second#me'
-      const rule = new AclRule([READ, WRITE], [firstAgent, secondAgent])
-      const doc = new AclDoc({ defaultAccessTo })
-      doc.addRule(rule)
-      doc.deleteAgents(firstAgent)
-      expect(doc.hasRule(READ, firstAgent)).toBe(false)
-      expect(doc.hasRule(WRITE, firstAgent)).toBe(false)
-      expect(doc.hasRule([READ, WRITE], secondAgent)).toBe(true)
-    })
+  test('can add rule by passing rule arguments', () => {
+    doc.addRule([READ, WRITE], sampleWebIds)
+    doc.addRule(CONTROL, sampleWebIds, undefined, '#my-id')
+    expect(doc.hasRule([READ, WRITE], sampleWebIds)).toBe(true)
+    expect(doc.hasRule(CONTROL, sampleWebIds)).toBe(true)
   })
+  test('can overwrite defaultAccessTo from constructor', () => {
+    const rule = new AclRule(READ, sampleWebIds, sampleAccessTos)
+    doc.addRule(rule, undefined, undefined, '#my-id')
+    const storedRule = doc.getRuleBySubjectId('#my-id')
+    expect(storedRule.accessTo).toEqual(sampleAccessTos)
+  })
+  test('throws if accessTo is unknown', () => {
+    // Don't setting defaultAccessTo
+    const noDefaultDoc = new AclDoc()
+    expect(() => noDefaultDoc.addRule(sampleRules[0])).toThrowError(/accessTo/)
+  })
+  test('overwrites existing subjectId if specified', () => {
+    doc.addRule(sampleRules[0], undefined, undefined, '#my-id')
+    doc.addRule(sampleRules[1], undefined, undefined, '#my-id')
+    expect(doc.hasRule(sampleRules[0])).toBe(false)
+    expect(doc.hasRule(sampleRules[1])).toBe(true)
+  })
+})
 
-  describe('can use different ways to work with rules', () => {
-    test('explicit', () => {
-      const doc = new AclDoc({ defaultAccessTo })
-      const rule = new AclRule(new Permissions(READ), new Agents('web', 'ids'))
-      doc.addRule(rule)
-      expect(doc.hasRule(rule)).toBe(true)
-      doc.deleteRule(rule)
-      expect(doc.hasRule(new AclRule(READ, 'web'))).toBe(false)
-    })
+describe('hasRule', () => {
+  test('returns true if the same rule has been added', () => {
+    doc.addRule(sampleRules[0])
+    expect(doc.hasRule(sampleRules[0])).toBe(true)
+    doc.addRule(READ, Agents.PUBLIC)
+    expect(doc.hasRule(READ, Agents.PUBLIC)).toBe(true)
+  })
+  test('returns false if no permissions are granted', () => {
+    expect(doc.hasRule(READ, Agents.PUBLIC)).toBe(false)
+  })
+  test('returns true for any subsets of an added rule', () => {
+    doc.addRule([READ, WRITE], sampleWebIds)
 
-    test('casting', () => {
-      const doc = new AclDoc({ defaultAccessTo })
-      doc.addRule([READ, WRITE], ['web', 'ids'])
-      expect(doc.hasRule([READ, WRITE], 'web')).toBe(true)
-      expect(doc.hasRule([READ, WRITE], 'ids')).toBe(true)
-      doc.deleteRule(READ, ['web', 'ids'])
-      expect(doc.hasRule(READ, 'web')).toBe(false)
-      expect(doc.hasRule(WRITE, 'web')).toBe(true)
+    expect(doc.hasRule([READ, WRITE], sampleWebIds)).toBe(true)
+    expect(doc.hasRule(READ, sampleWebIds)).toBe(true)
+    expect(doc.hasRule([READ, WRITE], sampleWebIds.slice(1))).toBe(true)
+    expect(doc.hasRule(WRITE, sampleWebIds[0])).toBe(true)
+  })
+  test('returns true if rule is stored in multiple subjects', () => {
+    doc.addRule(READ, sampleWebIds[0], undefined, '#first')
+    doc.addRule(WRITE, sampleWebIds[0], undefined, '#second')
+    expect(doc.hasRule([READ, WRITE], sampleWebIds[0])).toBe(true)
+  })
+  test('returns false if not all permissions are granted', () => {
+    doc.addRule(READ, sampleWebIds[0], undefined, '#first')
+    doc.addRule(WRITE, sampleWebIds[0], undefined, '#second')
+    expect(doc.hasRule([READ, WRITE, CONTROL], sampleWebIds[0])).toBe(false)
+  })
+  // TODO
+  test.todo('check if accessTo is properly handled')
+})
 
-      doc.addRule(APPEND, 'test')
-      expect(doc.hasRule(APPEND, 'test')).toBe(true)
-    })
+describe('getRuleBySubjectId', () => {
+  test('returns rule with this id if existing', () => {
+    const rule = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos)
+    doc.addRule(rule, undefined, undefined, '#my-id')
+    expect(doc.getRuleBySubjectId('#my-id').equals(rule)).toBe(true)
+  })
+  test('returns undefined if no rule with that id exists', () => {
+    expect(doc.getRuleBySubjectId('#inexistent')).toBe(undefined)
+  })
+})
+
+describe('deleteBySubjectId', () => {
+  test('deletes completely if no rule is specified', () => {
+    doc.addRule(sampleRules[0], undefined, undefined, '#my-id')
+    doc.deleteBySubjectId('#my-id')
+    expect(Object.keys(doc.rules)).toHaveLength(0)
+  })
+  test('deletes completely if clone of rule is passed', () => {
+    doc.addRule(sampleRules[0], undefined, undefined, '#my-id')
+    doc.deleteBySubjectId('#my-id', sampleRules[0].clone())
+    expect(Object.keys(doc.rules)).toHaveLength(0)
+  })
+  test('deletes partial if only permissions differ', () => {
+    doc.addRule([READ, WRITE], sampleWebIds, undefined, '#my-id')
+    doc.deleteBySubjectId('#my-id', READ, sampleWebIds)
+    const rule = doc.getRuleBySubjectId('#my-id')
+    expect(rule).toBeDefined()
+    expect(rule.permissions.has(READ)).toBe(false)
+    expect(rule.permissions.has(WRITE)).toBe(true)
+    expect(rule.agents.hasWebId(...sampleWebIds)).toBe(true)
+    expect(Object.keys(doc.rules)).toHaveLength(1)
+  })
+  test('deletes partial if only agents differ', () => {
+    doc.addRule([READ, WRITE], sampleWebIds, undefined, '#my-id')
+    doc.deleteBySubjectId('#my-id', [READ, WRITE], sampleWebIds.slice(1))
+    const rule = doc.getRuleBySubjectId('#my-id')
+    expect(rule).toBeDefined()
+    expect(rule.permissions.has(READ, WRITE)).toBe(true)
+    expect(rule.agents.hasWebId(sampleWebIds[0])).toBe(true)
+    expect(rule.agents.hasWebId(...sampleWebIds.slice(1))).toBe(false)
+    expect(Object.keys(doc.rules)).toHaveLength(1)
+  })
+  test('splits up if permissions and agents differ', () => {
+    doc.addRule([READ, WRITE], sampleWebIds, undefined, '#my-id')
+    doc.deleteBySubjectId('#my-id', READ, sampleWebIds[0])
+    expect(doc.hasRule([READ, WRITE], sampleWebIds.slice(1))).toBe(true)
+    expect(doc.hasRule([READ, WRITE], sampleWebIds[0])).toBe(false)
+    expect(doc.hasRule(WRITE, sampleWebIds[0])).toBe(true)
+    expect(Object.keys(doc.rules)).toHaveLength(2)
+  })
+})
+
+describe('deleteRule', () => {
+  test('deletes combination of permissions and agents from the doc', () => {
+    doc.addRule([READ, WRITE], sampleWebIds)
+    doc.addRule([APPEND, CONTROL], sampleWebIds[0])
+
+    doc.deleteRule([READ, APPEND], sampleWebIds[0])
+
+    // Other webIds are not affected
+    expect(doc.hasRule([READ, WRITE], sampleWebIds.slice(1))).toBe(true)
+
+    // sampleWebIds[0] doesn't has READ and CONTROL anymore
+    expect(doc.hasRule(READ, sampleWebIds[0])).toBe(false)
+    expect(doc.hasRule(APPEND, sampleWebIds[0])).toBe(false)
+
+    // sampleWebIds[0] still has WRITE and CONTROL
+    expect(doc.hasRule([WRITE, CONTROL], sampleWebIds[0])).toBe(true)
+  })
+})
+
+describe('deletePermissions', () => {
+  test('deletes specified permissions from all rules', () => {
+    doc.addRule([READ, WRITE], sampleWebIds[0])
+    doc.addRule([READ, WRITE, CONTROL], sampleWebIds[1])
+    doc.addRule([READ, APPEND], sampleWebIds[2])
+
+    doc.deletePermissions(READ, WRITE)
+
+    for (let i = 0; i < 3; i++) {
+      expect(doc.hasRule(READ, sampleWebIds[i])).toBe(false)
+      expect(doc.hasRule(WRITE, sampleWebIds[i])).toBe(false)
+    }
+    expect(doc.hasRule(CONTROL, sampleWebIds[1])).toBe(true)
+    expect(doc.hasRule(APPEND, sampleWebIds[2])).toBe(true)
+  })
+})
+
+describe('deleteAgents', () => {
+  test('deletes specified agents from all rules', () => {
+    doc.addRule(READ, Agents.PUBLIC)
+    doc.addRule([READ, WRITE], sampleWebIds)
+
+    const agents = new Agents(sampleWebIds[0])
+    agents.addPublic()
+    doc.deleteAgents(agents)
+
+    expect(doc.hasRule(READ, Agents.PUBLIC)).toBe(false)
+    expect(doc.hasRule(READ, sampleWebIds[0])).toBe(false)
+    expect(doc.hasRule(WRITE, sampleWebIds[0])).toBe(false)
+    expect(doc.hasRule([READ, WRITE], sampleWebIds.slice(1))).toBe(true)
+  })
+})
+
+describe('getPermissionsFor', () => {
+  test('returns all permissions which have been granted to a single agent', () => {
+    doc.addRule(READ, Agents.PUBLIC)
+    doc.addRule([READ, WRITE], sampleWebIds)
+
+    expect(doc.getPermissionsFor(sampleWebIds[0]).has(READ, WRITE)).toBe(true)
+    expect(doc.getPermissionsFor(sampleWebIds[0]).has(APPEND)).toBe(false)
+    expect(doc.getPermissionsFor(Agents.PUBLIC).has(READ)).toBe(true)
+    expect(doc.getPermissionsFor(Agents.PUBLIC).has(WRITE)).toBe(false)
+  })
+  test('returns all permissions which have been granted to multiple webIds', () => {
+    doc.addRule(READ, sampleWebIds[0])
+    doc.addRule(READ, sampleWebIds[1])
+    doc.addRule([READ, WRITE], sampleWebIds[2])
+
+    const permissions = doc.getPermissionsFor(sampleWebIds.slice(0, 2))
+    expect(permissions.has(READ)).toBe(true)
+    expect(permissions.has(WRITE)).toBe(false)
+  })
+})
+
+describe('getAgentsWith', () => {
+  test('returns all agents with single permissions', () => {
+    doc.addRule(READ, Agents.PUBLIC)
+    doc.addRule([READ, WRITE], sampleWebIds.slice(1))
+
+    const agents = doc.getAgentsWith(READ)
+    expect(agents.hasPublic()).toBe(true)
+    expect(agents.hasAuthenticated()).toBe(false)
+    expect(agents.hasWebId(...sampleWebIds.slice(1))).toBe(true)
+    expect(agents.hasWebId(sampleWebIds[0])).toBe(false)
+  })
+  test('returns all agents with combination of permissions', () => {
+    doc.addRule(READ, Agents.PUBLIC)
+    doc.addRule([READ, WRITE], sampleWebIds[0])
+    doc.addRule([READ, WRITE, CONTROL], sampleWebIds[1])
+    doc.addRule([READ, APPEND], sampleWebIds[2])
+
+    const agents = doc.getAgentsWith([READ, WRITE])
+    expect(agents.hasPublic()).toBe(false)
+    expect(agents.hasWebId(sampleWebIds[0])).toBe(true)
+    expect(agents.hasWebId(sampleWebIds[1])).toBe(true)
+    expect(agents.hasWebId(sampleWebIds[2])).toBe(false)
+  })
+})
+
+describe('addOther', () => {
+  test('adds quad to otherQuads', () => {
+    const quads = [1, 2, 3, 4]
+    doc.addOther(...quads)
+    expect(doc.otherQuads).toEqual(quads)
+  })
+})
+
+describe('getMinifiedRules', () => {
+  test('no rules with no effect are included', () => {
+    doc.addRule([], Agents.PUBLIC)
+    doc.addRule(Permissions.ALL, [])
+    doc.minimizeRules()
+    expect(Object.keys(doc.rules)).toHaveLength(0)
+  })
+})
+
+describe('chainable methods', () => {
+  test('can chain methods which support it', () => {
+    doc.addRule(READ, Agents.PUBLIC, undefined, '#public')
+      .addRule(WRITE, sampleWebIds)
+      .deleteBySubjectId('#public')
+      .deleteAgents(sampleWebIds)
+      .minimizeRules()
+
+    expect(Object.keys(doc.rules)).toHaveLength(0)
+
+    doc.addRule(READ, Agents.PUBLIC, undefined, '#public')
+      .deleteRule(READ, Agents.PUBLIC)
+      .addRule([READ, WRITE], sampleWebIds)
+      .deletePermissions(READ, WRITE)
+      .addOther('test')
+      .minimizeRules()
+
+    expect(Object.keys(doc.rules)).toHaveLength(0)
   })
 })

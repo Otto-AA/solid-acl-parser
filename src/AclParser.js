@@ -188,10 +188,10 @@ class AclParser {
   aclDocToTurtle (doc) {
     const writer = new N3.Writer({ prefixes })
 
-    const rules = doc.getMinifiedRules()
+    doc.minimizeRules()
     /** @type {N3.Quad[]} */
     const quads = []
-    for (const [subjectId, rule] of Object.entries(rules)) {
+    for (const [subjectId, rule] of Object.entries(doc.rules)) {
       const ruleQuads = this._ruleToQuads(subjectId, rule)
       quads.push(...ruleQuads)
     }

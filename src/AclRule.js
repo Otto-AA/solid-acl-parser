@@ -156,6 +156,8 @@ class AclRule {
     /** @type {AclRule[]} */
     const rules = []
 
+    // TODO: Consider adding accessTo
+
     // Add rule for all unaffected agents
     // e.g. AclRule([READ, WRITE], ['web', 'id']) - AclRule([READ, WRITE], 'web') = AclRule([READ, WRITE], 'id')
     const unaffectedAgents = Agents.subtract(first.agents, second.agents)
