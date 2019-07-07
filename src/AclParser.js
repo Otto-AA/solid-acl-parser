@@ -273,6 +273,8 @@ class AclParser {
       ))
     }
 
+    quads.push(...rule.otherQuads)
+
     return quads
   }
 }

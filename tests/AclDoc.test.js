@@ -73,8 +73,6 @@ describe('hasRule', () => {
     doc.addRule(WRITE, sampleWebIds[0], { subjectId: '#second' })
     expect(doc.hasRule([READ, WRITE, CONTROL], sampleWebIds[0])).toBe(false)
   })
-  // TODO
-  test.todo('check if accessTo is properly handled')
 })
 
 describe('getRuleBySubjectId', () => {

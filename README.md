@@ -5,4 +5,9 @@ A js library for working with acl files. It allows you to parse the turtle repre
 
 
 # Status of the project
-Basic functionality is already given, but it is still actively worked on. Documentation and examples will be added as soon as the code base is more stable. The tests for some files are already finished, for some there are partial tests and for some it is completely insufficient as of now.
+Most features of the WAC-spec are already implemented and tested. You can take a look at tests/parse/samples.js to view them.
+
+Current limitations:
+- No support for acl:trustedApp
+- No support for multiple accessTo's in the same acl file
+- No support for multiple default's in the same rule (subject id group)

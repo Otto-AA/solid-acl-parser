@@ -211,7 +211,6 @@ class AclDoc {
   getPermissionsFor (agents) {
     agents = Agents.from(agents)
 
-    // TODO: Check if a more efficient way exists to do this
     const permissions = new Permissions()
     for (const perm of Permissions.ALL) {
       if (this.getAgentsWith(perm).includes(agents)) {
@@ -219,11 +218,6 @@ class AclDoc {
       }
     }
     return permissions
-
-    // return Object.values(this.rules)
-    //   .filter(rule => rule.agents.includes(agents))
-    //   .map(rule => rule.permissions)
-    //   .reduce(Permissions.merge, Permissions.from()) // TODO: Check if this works
   }
 
   /**
@@ -244,7 +238,7 @@ class AclDoc {
     return Object.values(this.rules)
       .filter(rule => rule.permissions.includes(permissions))
       .map(rule => rule.agents)
-      .reduce(Agents.merge, Agents.from()) // TODO: Check if this works
+      .reduce(Agents.merge, Agents.from())
   }
 
   /**
@@ -252,7 +246,7 @@ class AclDoc {
    * @returns {this}
    */
   minimizeRules () {
-    // TODO
+    // TODO: Try to merge rules with a subject id starting with defaultSubjectIdBase
     for (const [subjectId, rule] of Object.entries(this.rules)) {
       if (rule.hasNoEffect()) {
         delete this.rules[subjectId]

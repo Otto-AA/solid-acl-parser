@@ -80,14 +80,15 @@ class AclRule {
    * @param {AclRule} other
    * @returns {boolean}
    */
-  includes (other) {
-    return iterableIncludesIterable(this.accessTo, other.accessTo) && // TODO: Check if a wildcard accessTo exists
-      iterableIncludesIterable(this.otherQuads, other.otherQuads) &&
-      this.permissions.includes(other.permissions) &&
-      this.agents.includes(other.agents) &&
-      (this.default === other.default || !other.default) &&
-      (this.defaultForNew === other.defaultForNew || !other.defaultForNew)
-  }
+  // NOTE: This is only left in case it will be used in the future. Feel free to delete this and the tests in AclRule.test.js
+  // includes (other) {
+  //   return iterableIncludesIterable(this.accessTo, other.accessTo) &&
+  //     iterableIncludesIterable(this.otherQuads, other.otherQuads) &&
+  //     this.permissions.includes(other.permissions) &&
+  //     this.agents.includes(other.agents) &&
+  //     (this.default === other.default || !other.default) &&
+  //     (this.defaultForNew === other.defaultForNew || !other.defaultForNew)
+  // }
 
   /**
    * @description Return true when this rule has no effect (No permissions or no agents or no targets).
@@ -155,8 +156,6 @@ class AclRule {
   static subtract (first, second) {
     /** @type {AclRule[]} */
     const rules = []
-
-    // TODO: Consider adding accessTo
 
     // Add rule for all unaffected agents
     // e.g. AclRule([READ, WRITE], ['web', 'id']) - AclRule([READ, WRITE], 'web') = AclRule([READ, WRITE], 'id')

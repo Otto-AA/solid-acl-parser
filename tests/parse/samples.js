@@ -1,3 +1,4 @@
+import N3 from 'n3'
 import AclDoc from '../../src/AclDoc'
 import AclRule from '../../src/AclRule'
 import Permissions from '../../src/Permissions'
@@ -229,6 +230,44 @@ const samples = [
       const agents = new Agents('https://example.solid.community/profile/card#me', 'mailto:user@example.org')
       const rule = new AclRule([READ, WRITE, CONTROL], agents, undefined, { default: this.fileUrl, defaultForNew: this.fileUrl })
       doc.addRule(rule, null, { subjectId: `${this.aclUrl}#owner` })
+
+      return doc
+    }
+  }, {
+    description: 'Custom | Check if non-aclRule triples are stored',
+    turtle: `
+@prefix   acl:  <http://www.w3.org/ns/auth/acl#>.
+@prefix  foaf:  <http://xmlns.com/foaf/0.1/>.
+
+<#authorization2>
+    a               acl:Authorization;
+    foaf:name       "Jane Doe";
+    acl:agentClass  foaf:Agent;                               # everyone
+    acl:mode        acl:Read;                                 # has Read-only access
+    acl:accessTo    <https://alice.databox.me/profile/card>.  # to the public profile
+
+<#me>
+    foaf:givenName  "Jane".`,
+    aclUrl: 'https://alice.databox.me/profile/card.acl',
+    fileUrl: 'https://alice.databox.me/profile/card',
+    getAclDoc () {
+      const doc = new AclDoc({ accessTo: this.fileUrl })
+
+      const { DataFactory: { quad, namedNode, literal } } = N3
+      const name = quad(
+        namedNode(`${this.aclUrl}#authorization2`),
+        namedNode('http://xmlns.com/foaf/0.1/name'),
+        literal('Jane Doe')
+      )
+      const givenName = quad(
+        namedNode(`${this.aclUrl}#me`),
+        namedNode('http://xmlns.com/foaf/0.1/givenName'),
+        literal('Jane')
+      )
+
+      const rule = new AclRule(READ, Agents.PUBLIC, undefined, { otherQuads: [ name ] })
+      doc.addRule(rule, null, { subjectId: `${this.aclUrl}#authorization2` })
+      doc.addOther(givenName)
 
       return doc
     }

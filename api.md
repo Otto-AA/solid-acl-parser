@@ -18,6 +18,15 @@
 <dl>
 <dt><a href="#iterableEquals">iterableEquals(a, b)</a> ⇒ <code>boolean</code></dt>
 <dd></dd>
+<dt><a href="#arrayEquals">arrayEquals(a, b)</a> ⇒ <code>boolean</code></dt>
+<dd></dd>
+<dt><a href="#iterableIncludesIterable">iterableIncludesIterable(a, b)</a> ⇒ <code>boolean</code></dt>
+<dd></dd>
+<dt><a href="#arrayIncludesArray">arrayIncludesArray(a, b)</a> ⇒ <code>boolean</code></dt>
+<dd></dd>
+<dt><a href="#parseTurtle">parseTurtle(parser, turtle)</a> ⇒ <code>Object.&lt;string, Array.&lt;N3.Quad&gt;&gt;</code></dt>
+<dd><p>parse all data from a turtle file and groups it by subjectIds</p>
+</dd>
 </dl>
 
 <a name="module_AclDoc"></a>
@@ -26,26 +35,27 @@
 
 * [AclDoc](#module_AclDoc)
     * [AclDoc](#exp_module_AclDoc--AclDoc) ⏏
-        * [new AclDoc([options])](#new_module_AclDoc--AclDoc_new)
+        * [new AclDoc(options)](#new_module_AclDoc--AclDoc_new)
         * _instance_
             * [.rules](#module_AclDoc--AclDoc+rules) : <code>Object.&lt;string, AclRule&gt;</code>
             * [.otherQuads](#module_AclDoc--AclDoc+otherQuads) : <code>Array.&lt;Quad&gt;</code>
-            * [.addRule(permissions, agents, [accessTo], [subjectId])](#module_AclDoc--AclDoc+addRule)
+            * [.addRule(permissions, agents, [options])](#module_AclDoc--AclDoc+addRule) ⇒ <code>this</code>
             * [.hasRule(rule)](#module_AclDoc--AclDoc+hasRule) ⇒ <code>boolean</code>
-            * [.deleteRule(rule)](#module_AclDoc--AclDoc+deleteRule)
-            * [.deleteBySubject(subjectId, [rule])](#module_AclDoc--AclDoc+deleteBySubject)
-            * [.deleteAgents(agents)](#module_AclDoc--AclDoc+deleteAgents)
-            * [.deletePermissions(permissions)](#module_AclDoc--AclDoc+deletePermissions)
+            * [.getRuleBySubjectId(subjectId)](#module_AclDoc--AclDoc+getRuleBySubjectId) ⇒ <code>AclRule</code> \| <code>undefined</code>
+            * [.deleteRule(rule)](#module_AclDoc--AclDoc+deleteRule) ⇒ <code>this</code>
+            * [.deleteBySubjectId(subjectId, [rule])](#module_AclDoc--AclDoc+deleteBySubjectId) ⇒ <code>this</code>
+            * [.deleteAgents(agents)](#module_AclDoc--AclDoc+deleteAgents) ⇒ <code>this</code>
+            * [.deletePermissions(...permissions)](#module_AclDoc--AclDoc+deletePermissions) ⇒ <code>this</code>
             * [.getPermissionsFor(agents)](#module_AclDoc--AclDoc+getPermissionsFor) ⇒ <code>Permissions</code>
             * [.getAgentsWith(permissions)](#module_AclDoc--AclDoc+getAgentsWith) ⇒ <code>Agents</code>
-            * [.getMinifiedRules()](#module_AclDoc--AclDoc+getMinifiedRules) ⇒ <code>Object.&lt;string, AclRule&gt;</code>
-            * [.addOther(other)](#module_AclDoc--AclDoc+addOther)
-            * [.toTurtle()](#module_AclDoc--AclDoc+toTurtle)
+            * [.minimizeRules()](#module_AclDoc--AclDoc+minimizeRules) ⇒ <code>this</code>
+            * [.addOther(...other)](#module_AclDoc--AclDoc+addOther) ⇒ <code>this</code>
+            * [.equals(other)](#module_AclDoc--AclDoc+equals) ⇒ <code>boolean</code>
             * [._ruleFromArgs()](#module_AclDoc--AclDoc+_ruleFromArgs) ⇒ <code>AclRule</code>
-            * [._getDefaultAccessTo()](#module_AclDoc--AclDoc+_getDefaultAccessTo) ⇒ <code>string</code>
             * [._getNewSubjectId([base])](#module_AclDoc--AclDoc+_getNewSubjectId) ⇒ <code>string</code>
         * _inner_
             * [~AclDocOptions](#module_AclDoc--AclDoc..AclDocOptions) : <code>object</code>
+            * [~AddRuleOptions](#module_AclDoc--AclDoc..AddRuleOptions) : <code>object</code>
 
 <a name="exp_module_AclDoc--AclDoc"></a>
 
@@ -53,13 +63,13 @@
 **Kind**: Exported class  
 <a name="new_module_AclDoc--AclDoc_new"></a>
 
-#### new AclDoc([options])
+#### new AclDoc(options)
 Class for storing information of an acl file
 
 
 | Param | Type |
 | --- | --- |
-| [options] | <code>AclDocOptions</code> | 
+| options | <code>AclDocOptions</code> | 
 
 **Example**  
 ```js
@@ -68,7 +78,7 @@ Class for storing information of an acl file
 const { READ } = Permissions
 const webId = 'https://solid.example.org/profile/card#me'
 
-const doc = new AclDoc({ defaultAccessTo: 'https://solid.example.org/foo/file.ext' })
+const doc = new AclDoc({ accessTo: 'https://solid.example.org/foo/file.ext' })
 
 // Give one user all permissions (READ, WRITE, APPEND and CONTROL)
 // We can add a subjectId, else it will be generated automatically
@@ -87,15 +97,17 @@ doc.addRule(new AclRule(READ, Agents.PUBLIC))
 **Kind**: instance property of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
 <a name="module_AclDoc--AclDoc+addRule"></a>
 
-#### aclDoc.addRule(permissions, agents, [accessTo], [subjectId])
+#### aclDoc.addRule(permissions, agents, [options]) ⇒ <code>this</code>
+Adds a new rule.
+If subjectId is specified and already exits the old one will be overwritten
+
 **Kind**: instance method of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
 
 | Param | Type |
 | --- | --- |
 | permissions | <code>Permissions</code> | 
 | agents | <code>Agents</code> | 
-| [accessTo] | <code>string</code> | 
-| [subjectId] | <code>string</code> | 
+| [options] | <code>AddRuleOptions</code> | 
 
 **Example**  
 ```js
@@ -122,9 +134,20 @@ doc.hasRule([READ, WRITE], ['https://first.web.id', 'https://second.web.id']) //
 doc.hasRule(CONTROL, 'https://first.web.id') // false
 doc.hasRule(READ, 'https://third.web.id') // false
 ```
+<a name="module_AclDoc--AclDoc+getRuleBySubjectId"></a>
+
+#### aclDoc.getRuleBySubjectId(subjectId) ⇒ <code>AclRule</code> \| <code>undefined</code>
+Get the rule with this subject id
+
+**Kind**: instance method of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
+
+| Param | Type |
+| --- | --- |
+| subjectId | <code>string</code> | 
+
 <a name="module_AclDoc--AclDoc+deleteRule"></a>
 
-#### aclDoc.deleteRule(rule)
+#### aclDoc.deleteRule(rule) ⇒ <code>this</code>
 **Kind**: instance method of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
 
 | Param | Type |
@@ -139,9 +162,9 @@ doc.hasRule(READ, 'https://first.web.id') // false
 doc.hasRule(WRITE, 'https://first.web.id') // true
 doc.hasRule([READ, WRITE], 'https://second.web.id') // true
 ```
-<a name="module_AclDoc--AclDoc+deleteBySubject"></a>
+<a name="module_AclDoc--AclDoc+deleteBySubjectId"></a>
 
-#### aclDoc.deleteBySubject(subjectId, [rule])
+#### aclDoc.deleteBySubjectId(subjectId, [rule]) ⇒ <code>this</code>
 **Kind**: instance method of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
 
 | Param | Type | Description |
@@ -151,7 +174,7 @@ doc.hasRule([READ, WRITE], 'https://second.web.id') // true
 
 <a name="module_AclDoc--AclDoc+deleteAgents"></a>
 
-#### aclDoc.deleteAgents(agents)
+#### aclDoc.deleteAgents(agents) ⇒ <code>this</code>
 **Kind**: instance method of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
 
 | Param | Type |
@@ -168,12 +191,12 @@ doc.deleteAgents(agents)
 ```
 <a name="module_AclDoc--AclDoc+deletePermissions"></a>
 
-#### aclDoc.deletePermissions(permissions)
+#### aclDoc.deletePermissions(...permissions) ⇒ <code>this</code>
 **Kind**: instance method of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
 
 | Param | Type |
 | --- | --- |
-| permissions | <code>Permissions</code> | 
+| ...permissions | <code>Permissions</code> | 
 
 **Example**  
 ```js
@@ -185,7 +208,8 @@ doc.deletePermissions(APPEND)
 
 #### aclDoc.getPermissionsFor(agents) ⇒ <code>Permissions</code>
 Get all permissions a specific group of agents has
-Ignores accessTo
+Public will not be added automatically to the agents.
+Only works for single agents
 
 **Kind**: instance method of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
 
@@ -219,46 +243,35 @@ agents.hasPublic() // true if everyone has write permissions
 // You can iterate over the webIds set if you want to list them all
 [...agents.webIds].forEach(webId => console.log(webId))
 ```
-<a name="module_AclDoc--AclDoc+getMinifiedRules"></a>
+<a name="module_AclDoc--AclDoc+minimizeRules"></a>
 
-#### aclDoc.getMinifiedRules() ⇒ <code>Object.&lt;string, AclRule&gt;</code>
-Use this to get all rules for converting to turtle
+#### aclDoc.minimizeRules() ⇒ <code>this</code>
+Delete all unused rules
 
 **Kind**: instance method of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
 <a name="module_AclDoc--AclDoc+addOther"></a>
 
-#### aclDoc.addOther(other)
+#### aclDoc.addOther(...other) ⇒ <code>this</code>
 add data which isn't an access restriction
 
 **Kind**: instance method of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
 
 | Param | Type |
 | --- | --- |
-| other | <code>Quad</code> | 
+| ...other | <code>Quad</code> | 
 
-<a name="module_AclDoc--AclDoc+toTurtle"></a>
+<a name="module_AclDoc--AclDoc+equals"></a>
 
-#### aclDoc.toTurtle()
-Create the turtle representation for this acl document
-
+#### aclDoc.equals(other) ⇒ <code>boolean</code>
 **Kind**: instance method of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
-**Example**  
-```js
-// TODO: Test if this works
-// Update the acl file
-const turtle = doc.toTurtle()
-solid.auth.fetch(aclUrl, {
-  method: 'PUT',
-  body: turtle
-})
-```
+
+| Param | Type |
+| --- | --- |
+| other | <code>AclDoc</code> | 
+
 <a name="module_AclDoc--AclDoc+_ruleFromArgs"></a>
 
 #### aclDoc.\_ruleFromArgs() ⇒ <code>AclRule</code>
-**Kind**: instance method of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
-<a name="module_AclDoc--AclDoc+_getDefaultAccessTo"></a>
-
-#### aclDoc.\_getDefaultAccessTo() ⇒ <code>string</code>
 **Kind**: instance method of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
 <a name="module_AclDoc--AclDoc+_getNewSubjectId"></a>
 
@@ -267,9 +280,9 @@ Get an unused subject id
 
 **Kind**: instance method of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| [base] | <code>string</code> | <code>&quot;&#x27;new-acl-rule&#x27;&quot;</code> | The newly generated id will begin with this base id |
+| Param | Type | Description |
+| --- | --- | --- |
+| [base] | <code>string</code> | The newly generated id will begin with this base id |
 
 <a name="module_AclDoc--AclDoc..AclDocOptions"></a>
 
@@ -279,7 +292,17 @@ Get an unused subject id
 
 | Name | Type | Description |
 | --- | --- | --- |
-| [defaultAccessTo] | <code>string</code> | Url to the file/folder which will be granted access to |
+| accessTo | <code>string</code> | Url to the file/folder which will be granted access to |
+
+<a name="module_AclDoc--AclDoc..AddRuleOptions"></a>
+
+#### AclDoc~AddRuleOptions : <code>object</code>
+**Kind**: inner typedef of [<code>AclDoc</code>](#exp_module_AclDoc--AclDoc)  
+**Properties**
+
+| Name | Type |
+| --- | --- |
+| [subjectId] | <code>string</code> | 
 
 <a name="module_AclParser"></a>
 
@@ -287,12 +310,16 @@ Get an unused subject id
 
 * [AclParser](#module_AclParser)
     * [AclParser](#exp_module_AclParser--AclParser) ⏏
-        * [new AclParser([baseIRI])](#new_module_AclParser--AclParser_new)
-        * [.turtleToAclDoc(aclTurtle)](#module_AclParser--AclParser+turtleToAclDoc) ⇒ <code>Promise.&lt;AclDoc&gt;</code>
-        * [._parseRules(turtle, ruleCallback, otherCallback)](#module_AclParser--AclParser+_parseRules) ⇒ <code>Promise.&lt;void&gt;</code>
-        * [._addQuadToRule(rule, quad)](#module_AclParser--AclParser+_addQuadToRule)
-        * [.aclDocToTurtle(doc)](#module_AclParser--AclParser+aclDocToTurtle) ⇒ <code>Promise.&lt;string&gt;</code>
-        * [._ruleToQuads(subjectId, rule)](#module_AclParser--AclParser+_ruleToQuads) ⇒ <code>Array.&lt;N3.Quad&gt;</code>
+        * [new AclParser(options)](#new_module_AclParser--AclParser_new)
+        * _instance_
+            * [.turtleToAclDoc(aclTurtle)](#module_AclParser--AclParser+turtleToAclDoc) ⇒ <code>Promise.&lt;AclDoc&gt;</code>
+            * [._quadsToRule(quads)](#module_AclParser--AclParser+_quadsToRule) ⇒ <code>AclRule</code>
+            * [._isAclRule(quads)](#module_AclParser--AclParser+_isAclRule) ⇒ <code>boolean</code>
+            * [._addQuadToRule(rule, quad)](#module_AclParser--AclParser+_addQuadToRule)
+            * [.aclDocToTurtle(doc)](#module_AclParser--AclParser+aclDocToTurtle) ⇒ <code>Promise.&lt;string&gt;</code>
+            * [._ruleToQuads(subjectId, rule)](#module_AclParser--AclParser+_ruleToQuads) ⇒ <code>Array.&lt;N3.Quad&gt;</code>
+        * _inner_
+            * [~AclParserOptions](#module_AclParser--AclParser..AclParserOptions)
 
 <a name="exp_module_AclParser--AclParser"></a>
 
@@ -300,13 +327,13 @@ Get an unused subject id
 **Kind**: Exported class  
 <a name="new_module_AclParser--AclParser_new"></a>
 
-#### new AclParser([baseIRI])
+#### new AclParser(options)
 Class for parsing a turtle representation of an acl file into an instance of the Acl class
 
 
-| Param | Type | Default |
-| --- | --- | --- |
-| [baseIRI] | <code>string</code> | <code>&quot;./&quot;</code> | 
+| Param | Type |
+| --- | --- |
+| options | <code>AclParserOptions</code> | 
 
 **Example**  
 ```js
@@ -315,7 +342,7 @@ const fileUrl = 'https://pod.example.org/private/'
 const aclUrl = 'https://pod.example.org/private/file.acl' // Retrieve this from the acl field in the Link header
 const turtle = await solid.auth.fetch(aclUrl)
 
-const parser = new AclParser({ baseIRI: aclUrl })
+const parser = new AclParser({ fileUrl, aclUrl })
 const doc = await parser.turtleToAclDoc(turtle)
 doc.defaultAccessTo = fileUrl
 doc.addRule(READ, 'https://other.web.id')
@@ -335,16 +362,23 @@ await solid.auth.fetch(aclUrl, { // TODO: Check if this works
 | --- | --- |
 | aclTurtle | <code>string</code> | 
 
-<a name="module_AclParser--AclParser+_parseRules"></a>
+<a name="module_AclParser--AclParser+_quadsToRule"></a>
 
-#### aclParser.\_parseRules(turtle, ruleCallback, otherCallback) ⇒ <code>Promise.&lt;void&gt;</code>
+#### aclParser.\_quadsToRule(quads) ⇒ <code>AclRule</code>
 **Kind**: instance method of [<code>AclParser</code>](#exp_module_AclParser--AclParser)  
 
 | Param | Type |
 | --- | --- |
-| turtle | <code>string</code> | 
-| ruleCallback | <code>function</code> | 
-| otherCallback | <code>function</code> | 
+| quads | <code>Array.&lt;N3.Quad&gt;</code> | 
+
+<a name="module_AclParser--AclParser+_isAclRule"></a>
+
+#### aclParser.\_isAclRule(quads) ⇒ <code>boolean</code>
+**Kind**: instance method of [<code>AclParser</code>](#exp_module_AclParser--AclParser)  
+
+| Param | Type |
+| --- | --- |
+| quads | <code>Array.&lt;N3.Quad&gt;</code> | 
 
 <a name="module_AclParser--AclParser+_addQuadToRule"></a>
 
@@ -374,6 +408,17 @@ await solid.auth.fetch(aclUrl, { // TODO: Check if this works
 | --- | --- |
 | subjectId | <code>string</code> | 
 | rule | <code>AclRule</code> | 
+
+<a name="module_AclParser--AclParser..AclParserOptions"></a>
+
+#### AclParser~AclParserOptions
+**Kind**: inner typedef of [<code>AclParser</code>](#exp_module_AclParser--AclParser)  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| aclUrl | <code>string</code> | the url of the acl file |
+| fileUrl | <code>string</code> | the file for which the permissions will be parsed |
 
 <a name="module_AclRule"></a>
 
@@ -451,7 +496,8 @@ const rule = new AclRule([READ, WRITE], [webId], accessTo)
 <a name="module_AclRule--AclRule+hasNoEffect"></a>
 
 #### aclRule.hasNoEffect() ⇒ <code>boolean</code>
-Return true when this rule has no effect (No permissions or no agents or no targets)
+Return true when this rule has no effect (No permissions or no agents or no targets).
+To prevent unexpected errors it will return false if any unknown statements (quads) are stored
 
 **Kind**: instance method of [<code>AclRule</code>](#exp_module_AclRule--AclRule)  
 <a name="module_AclRule--AclRule.from"></a>
@@ -486,6 +532,8 @@ If the neither the agents nor the permissions are equal, it is split up into two
 accessTo and otherQuads will be set to the first one
 
 **Kind**: static method of [<code>AclRule</code>](#exp_module_AclRule--AclRule)  
+**Returns**: <code>Array.&lt;AclRule&gt;</code> - Array containing zero, one or two AclRule instances.
+If two are returned, the first one is the rule for the unaffected agents  
 
 | Param | Type |
 | --- | --- |
@@ -922,3 +970,49 @@ Return all permissions from the first which aren't in the second
 | a | <code>Iterable</code> | 
 | b | <code>Iterable</code> | 
 
+<a name="arrayEquals"></a>
+
+## arrayEquals(a, b) ⇒ <code>boolean</code>
+**Kind**: global function  
+
+| Param | Type |
+| --- | --- |
+| a | <code>Array</code> | 
+| b | <code>Array</code> | 
+
+<a name="iterableIncludesIterable"></a>
+
+## iterableIncludesIterable(a, b) ⇒ <code>boolean</code>
+**Kind**: global function  
+
+| Param | Type |
+| --- | --- |
+| a | <code>Iterable</code> | 
+| b | <code>Iterable</code> | 
+
+<a name="arrayIncludesArray"></a>
+
+## arrayIncludesArray(a, b) ⇒ <code>boolean</code>
+**Kind**: global function  
+
+| Param | Type |
+| --- | --- |
+| a | <code>Array</code> | 
+| b | <code>Array</code> | 
+
+<a name="parseTurtle"></a>
+
+## parseTurtle(parser, turtle) ⇒ <code>Object.&lt;string, Array.&lt;N3.Quad&gt;&gt;</code>
+parse all data from a turtle file and groups it by subjectIds
+
+**Kind**: global function  
+
+| Param | Type |
+| --- | --- |
+| parser | <code>N3.N3Parser</code> | 
+| turtle | <code>string</code> | 
+
+<a name="parseTurtle..data"></a>
+
+### parseTurtle~data : <code>Object.&lt;string, Array.&lt;N3.Quad&gt;&gt;</code>
+**Kind**: inner constant of [<code>parseTurtle</code>](#parseTurtle)  
