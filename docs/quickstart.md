@@ -8,9 +8,9 @@ In this section the basic usage will be explained which should be sufficient for
 Only use this for testing, this link will be broken in the future.
 
 ```text/html
-<script type="application/javascript" src="https://cdn.jsdelivr.net/gh/otto-aa/acl-utils/dist/browser/acl-utils.bundle.js"></script>
+<script type="application/javascript" src="https://cdn.jsdelivr.net/gh/otto-aa/solid-acl-parser/dist/browser/solid-acl-parser.bundle.js"></script>
 <script type="application/javascript">
-  const { AclParser, AclDoc, AclRule, Permissions, Agents } = AclUtils
+  const { AclParser, AclDoc, AclRule, Permissions, Agents } = SolidAclParser
   const { READ, WRITE, APPEND, CONTROL } = Permissions
 
   // Your code
@@ -42,7 +42,7 @@ const turtle = `
     acl:mode        acl:Read;                                 # has Read-only access
     acl:accessTo    <https://alice.databox.me/profile/card>.`
 
-const { AclParser, Permissions } = AclUtils
+const { AclParser, Permissions } = SolidAclParser
 const { WRITE, CONTROL } = Permissions
 
 async function main() {

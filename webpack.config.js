@@ -5,8 +5,8 @@ const common = {
   mode: 'production',
   entry: ['babel-polyfill', './src/index.js'],
   output: {
-    filename: 'acl-utils.bundle.js',
-    library: 'AclUtils',
+    filename: 'solid-acl-parser.bundle.js',
+    library: 'SolidAclParser',
     libraryExport: 'default'
   },
   devtool: 'source-map'

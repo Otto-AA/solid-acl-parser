@@ -1,7 +1,7 @@
 {
-  "name": "acl-utils",
-  "version": "1.0.0",
-  "description": "",
+  "name": "solid-acl-parser",
+  "version": "0.0.1",
+  "description": "A js library for parsing and modifying acl files",
   "main": "index.js",
   "scripts": {
     "test": "jest",
@@ -9,8 +9,8 @@
     "build-api-docs": "jsdoc2md src/*.js > api.md",
     "version": "npm run docs"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "otto-aa",
+  "license": "MIT",
   "devDependencies": {
     "@babel/core": "^7.4.5",
     "@babel/plugin-transform-runtime": "^7.4.4",
