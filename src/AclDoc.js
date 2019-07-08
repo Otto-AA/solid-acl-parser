@@ -1,7 +1,7 @@
 import Agents from './Agents'
 import Permissions from './Permissions'
 import AclRule from './AclRule'
-import { iterableEquals } from './utils';
+import { iterableEquals } from './utils'
 
 /**
  * @module AclDoc

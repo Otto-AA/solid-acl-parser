@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Run AclUtils examples</title>
+
+  <style type="text/css">
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    textarea {
+      width: 50em;
+      height: 35em;
+    }
+  </style>
+</head>
+<body>
+  <p>Enter the code example here</p>
+  <pre>
+    <textarea id="code"></textarea>
+  </pre>
+  <form action="https://codepen.io/pen/define" method="POST" target="_self">
+    <input type="hidden" id="formData" name="data" value='{"title": "New Pen!", "html": "<div>There was an error inserting the code</div>"}'>
+  
+    <input type="submit" value="Open in CodePen">
+  </form>
+
+  <script type="application/javascript">
+    const textarea = document.getElementById('code')
+    const formInput = document.getElementById('formData')
+
+    const data = {
+      title: 'Acl-Utils example',
+      editors: '001',
+      html: '<p>Open the CodePen console to see the results</p>',
+      css: '',
+      js: textarea.value,
+      // TODO: Update this to npm as soon as it is released there
+      js_external: 'https://cdn.jsdelivr.net/gh/otto-aa/acl-utils/dist/browser/acl-utils.bundle.js'
+    }
+    updateFormInput()
+    textarea.addEventListener('input', e => {
+      data.js = textarea.value
+      updateFormInput()
+    })
+
+    function updateFormInput() {
+      const value = JSON.stringify(data)
+      console.groupCollapsed('updated')
+      console.log(value)
+      console.groupEnd()
+      formInput.value = value
+    }
+  </script>
+</body>
+</html>

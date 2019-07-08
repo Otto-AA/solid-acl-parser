@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "docs": "jsdoc2md src/*.js > api.md",
+    "view-docs": "docsify serve docs",
+    "build-api-docs": "jsdoc2md src/*.js > api.md",
     "version": "npm run docs"
   },
   "author": "",
@@ -18,6 +19,7 @@
     "babel-jest": "^24.8.0",
     "babel-loader": "^8.0.6",
     "babel-polyfill": "^6.26.0",
+    "docsify-cli": "^4.3.0",
     "jest": "^24.8.0",
     "jsdoc-to-markdown": "^5.0.0",
     "regenerator-runtime": "^0.13.2",
