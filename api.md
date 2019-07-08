@@ -430,7 +430,6 @@ await solid.auth.fetch(aclUrl, { // TODO: Check if this works
         * _instance_
             * [.clone()](#module_AclRule--AclRule+clone) ⇒ <code>AclRule</code>
             * [.equals(other)](#module_AclRule--AclRule+equals) ⇒ <code>boolean</code>
-            * [.includes(other)](#module_AclRule--AclRule+includes) ⇒ <code>boolean</code>
             * [.hasNoEffect()](#module_AclRule--AclRule+hasNoEffect) ⇒ <code>boolean</code>
         * _static_
             * [.from(first, [agents], [accessTo], [options])](#module_AclRule--AclRule.from) ⇒ <code>AclRule</code>
@@ -478,15 +477,6 @@ const rule = new AclRule([READ, WRITE], [webId], accessTo)
 <a name="module_AclRule--AclRule+equals"></a>
 
 #### aclRule.equals(other) ⇒ <code>boolean</code>
-**Kind**: instance method of [<code>AclRule</code>](#exp_module_AclRule--AclRule)  
-
-| Param | Type |
-| --- | --- |
-| other | <code>AclRule</code> | 
-
-<a name="module_AclRule--AclRule+includes"></a>
-
-#### aclRule.includes(other) ⇒ <code>boolean</code>
 **Kind**: instance method of [<code>AclRule</code>](#exp_module_AclRule--AclRule)  
 
 | Param | Type |

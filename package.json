@@ -1,14 +1,20 @@
 {
   "name": "solid-acl-parser",
   "version": "0.0.1",
+  "keywords": ["solid", "acl", "wac"],
   "description": "A js library for parsing and modifying acl files",
   "homepage": "https://otto-aa.github.io/solid-acl-parser/",
-  "main": "index.js",
+  "bugs": {
+    "url": "https://github.com/otto-aa/solid-acl-parser/issues"
+  },
+  "main": "dist/node/solid-acl-parser.bundle.js",
   "scripts": {
+    "build": "webpack",
+    "build:dev": "webpack --mode development --watch",
     "test": "jest",
     "view-docs": "docsify serve docs",
     "build-api-docs": "jsdoc2md src/*.js > api.md",
-    "version": "npm run docs"
+    "prepare": "npm run test && npm run build-api-docs"
   },
   "author": "otto-aa",
   "license": "MIT",
