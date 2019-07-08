@@ -1,7 +1,11 @@
 {
   "name": "solid-acl-parser",
   "version": "0.0.1",
-  "keywords": ["solid", "acl", "wac"],
+  "keywords": [
+    "solid",
+    "acl",
+    "wac"
+  ],
   "description": "A js library for parsing and modifying acl files",
   "homepage": "https://otto-aa.github.io/solid-acl-parser/",
   "bugs": {

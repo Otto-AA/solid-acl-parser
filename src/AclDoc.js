@@ -18,7 +18,7 @@ import { iterableEquals } from './utils'
  * @property {string} [subjectId]
  */
 
-const defaultSubjectIdBase = 'acl-utils-rule-'
+const defaultSubjectIdBase = 'solid-acl-parser-rule-'
 
 /**
  * @description Class for storing information of an acl file
