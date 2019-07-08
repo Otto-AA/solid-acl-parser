@@ -2,6 +2,7 @@
   "name": "solid-acl-parser",
   "version": "0.0.1",
   "description": "A js library for parsing and modifying acl files",
+  "homepage": "https://otto-aa.github.io/solid-acl-parser/",
   "main": "index.js",
   "scripts": {
     "test": "jest",

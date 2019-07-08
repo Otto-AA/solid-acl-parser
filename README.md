@@ -13,4 +13,4 @@ Current limitations:
 - No support for multiple default's in the same rule (subject id group)
 
 # Documentation
-https://otto-aa.github.io/solid-acl-parser/docs/
+https://otto-aa.github.io/solid-acl-parser/
