@@ -11,13 +11,15 @@
   "bugs": {
     "url": "https://github.com/otto-aa/solid-acl-parser/issues"
   },
-  "main": "dist/node/solid-acl-parser.bundle.js",
+  "main": "./dist/node/solid-acl-parser.bundle.js",
+  "types": "./types/index.d.ts",
   "scripts": {
     "build": "webpack",
     "build:dev": "webpack --mode development --watch",
+    "build:tsc": "npx tsc --outDir types --emitDeclarationOnly --declaration",
     "test": "jest",
     "view-docs": "docsify serve docs",
-    "prepare": "npm run test && npm run build && npm run build-api-docs"
+    "prepare": "npm run test && npm run build && npm run build:tsc"
   },
   "author": "otto-aa",
   "license": "MIT",
