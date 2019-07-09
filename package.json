@@ -19,7 +19,7 @@
     "build:tsc": "npx tsc --outDir types --emitDeclarationOnly --declaration",
     "test": "jest",
     "view-docs": "docsify serve docs",
-    "prepare": "npm run test && npm run build && npm run build:tsc"
+    "prepack": "npm run test && npm run build && npm run build:tsc"
   },
   "author": "otto-aa",
   "license": "MIT",
