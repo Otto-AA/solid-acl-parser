@@ -1,18 +1,11 @@
-/**
- * @param {Iterable} a
- * @param {Iterable} b
- * @returns {boolean}
- */
-export function iterableEquals (a, b) {
+import { N3Parser, Quad } from 'n3'
+
+type Iterable<T=any> = Array<T>|Set<T>
+
+export function iterableEquals (a: Iterable, b: Iterable): boolean {
   return arrayEquals([...a], [...b])
 }
-
-/**
- * @param {Array} a
- * @param {Array} b
- * @returns {boolean}
- */
-export function arrayEquals (a, b) {
+export function arrayEquals (a: Array<any>, b: Array<any>): boolean {
   return a.length === b.length && [...a].every(val => {
     return b.some(otherVal => {
       if (typeof val === 'object' && val.hasOwnProperty('equals')) {
@@ -23,21 +16,11 @@ export function arrayEquals (a, b) {
   })
 }
 
-/**
- * @param {Iterable} a
- * @param {Iterable} b
- * @returns {boolean}
- */
-export function iterableIncludesIterable (a, b) {
+export function iterableIncludesIterable (a: Iterable, b: Iterable): boolean {
   return arrayIncludesArray([...a], [...b])
 }
 
-/**
- * @param {Array} a
- * @param {Array} b
- * @returns {boolean}
- */
-export function arrayIncludesArray (a, b) {
+export function arrayIncludesArray (a: Array<any>, b: Array<any>) {
   return a.length >= b.length && b.every(val => {
     return a.some(otherVal => {
       if (typeof val === 'object' && val.hasOwnProperty('equals')) {
@@ -48,17 +31,10 @@ export function arrayIncludesArray (a, b) {
   })
 }
 
-/**
- * @description parse all data from a turtle file and groups it by subjectIds
- * @param {N3.N3Parser} parser
- * @param {string} turtle
- * @returns {Object.<string, N3.Quad[]>}
- */
-export function parseTurtle (parser, turtle) {
-  /** @type {Object.<string, N3.Quad[]>} */
-  const data = {}
+export function parseTurtle (parser: N3Parser, turtle: string) {
+  const data: Record<string, Quad[]> = {}
 
-  return new Promise((resolve, reject) => {
+  return new Promise<typeof data>((resolve, reject) => {
     parser.parse(turtle, (error, quad) => {
       if (error) {
         return reject(error)

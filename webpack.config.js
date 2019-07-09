@@ -3,11 +3,21 @@ const path = require('path')
 // Configurations shared between all builds
 const common = {
   mode: 'production',
-  entry: ['babel-polyfill', './src/index.js'],
+  entry: ['babel-polyfill', './src/index.ts'],
   output: {
     filename: 'solid-acl-parser.bundle.js',
     library: 'SolidAclParser',
     libraryExport: 'default'
+  },
+  module: {
+    rules: [{
+      test: /\.(js|jsx|tsx|ts)$/,
+      exclude: /node_modules/,
+      loader: 'babel-loader'
+    }]
+  },
+  resolve: {
+    extensions: ['*', '.js', '.jsx', '.tsx', '.ts']
   },
   devtool: 'source-map'
 }
@@ -20,15 +30,6 @@ const browser = {
     ...common.output,
     path: path.resolve(__dirname, 'dist', 'browser'),
     libraryTarget: 'umd'
-  },
-  module: {
-    rules: [
-      {
-        test: /\.js$/,
-        loader: 'babel-loader',
-        exclude: /node_modules/
-      }
-    ]
   }
 }
 

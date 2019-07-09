@@ -1,22 +1,20 @@
-import Agents from './Agents'
-import Permissions from './Permissions'
+import Agents, { AgentsCastable } from './Agents'
+import Permissions, { PermissionsCastable, permissionString } from './Permissions'
 import AclRule from './AclRule'
 import { iterableEquals } from './utils'
+import { Quad } from 'n3';
 
 /**
  * @module AclDoc
  */
-// /** @typedef {import("n3").Quad} Quad */
 
-/**
- * @typedef {object} AclDocOptions
- * @property {string} accessTo - Url to the file/folder which will be granted access to
- */
+interface AclDocOptions {
+  accessTo: string // Url to the file/folder which will be granted access to
+}
 
-/**
- * @typedef {object} AddRuleOptions
- * @property {string} [subjectId]
- */
+interface AddRuleOptions {
+  subjectId?: string
+}
 
 const defaultSubjectIdBase = 'solid-acl-parser-rule-'
 
@@ -40,15 +38,13 @@ const defaultSubjectIdBase = 'solid-acl-parser-rule-'
  *
  */
 class AclDoc {
-  /**
-   * @param {AclDocOptions} options
-   */
-  constructor ({ accessTo }) {
+  public readonly accessTo: string
+  public rules: Record<string, AclRule>
+  public otherQuads: Quad[]
+  
+  constructor ({ accessTo }: AclDocOptions) {
     this.accessTo = accessTo
-
-    /** @type {Object.<string, AclRule>} */
     this.rules = {}
-    /** @type {Quad[]} */
     this.otherQuads = []
   }
 
@@ -65,16 +61,14 @@ class AclDoc {
    * // addRule uses AclRule.from which means we could use following too
    * doc.addRule([READ, WRITE], 'https://my.web.id/#me')
    */
-  addRule (permissions, agents, { subjectId = this._getNewSubjectId() } = {}) {
-    const rule = this._ruleFromArgs(permissions, agents)
+  addRule (firstVal: AclRule|PermissionsCastable, agents?: Agents, { subjectId = this._getNewSubjectId() }: AddRuleOptions = {}) {
+    const rule = this._ruleFromArgs(firstVal, agents)
     this.rules[subjectId] = rule
 
     return this
   }
 
   /**
-   * @param {AclRule} rule
-   * @returns {boolean} true if this combination of these agents have the permissions for the accessTo file
    * @example
    * doc.addRule([READ, WRITE], ['https://first.web.id', 'https://second.web.id'])
    * doc.hasRule(READ, 'https://first.web.id') // true
@@ -82,10 +76,10 @@ class AclDoc {
    * doc.hasRule(CONTROL, 'https://first.web.id') // false
    * doc.hasRule(READ, 'https://third.web.id') // false
    */
-  hasRule (...args) {
+  hasRule (firstVal: AclRule|PermissionsCastable, agents?: Agents) {
     // A rule may be split up across multiple subject groups
     // Therefore we allow splitting it up and then checking the smaller rules
-    let rulesToCheck = [ this._ruleFromArgs(...args) ]
+    let rulesToCheck = [ this._ruleFromArgs(firstVal, agents) ]
 
     return Object.values(this.rules)
       .some(existingRule => {
@@ -101,16 +95,12 @@ class AclDoc {
 
   /**
    * @description Get the rule with this subject id
-   * @param  {string} subjectId
-   * @returns {AclRule|undefined}
    */
-  getRuleBySubjectId (subjectId) {
+  getRuleBySubjectId (subjectId: string): AclRule|undefined {
     return this.rules[subjectId]
   }
 
   /**
-   * @param {AclRule} rule
-   * @returns {this}
    * @example
    * doc.addRule([READ, WRITE], ['https://first.web.id', 'https://second.web.id'])
    * doc.deleteRule(READ, 'https://first.web.id')
@@ -118,8 +108,8 @@ class AclDoc {
    * doc.hasRule(WRITE, 'https://first.web.id') // true
    * doc.hasRule([READ, WRITE], 'https://second.web.id') // true
    */
-  deleteRule (...args) {
-    const toDelete = this._ruleFromArgs(...args)
+  deleteRule (firstVal: AclRule|PermissionsCastable, agents?: Agents) {
+    const toDelete = this._ruleFromArgs(firstVal, agents)
 
     for (const subjectId of Object.keys(this.rules)) {
       this.deleteBySubjectId(subjectId, toDelete)
@@ -128,17 +118,11 @@ class AclDoc {
     return this
   }
 
-  /**
-   * @param {string} subjectId
-   * @param {AclRule} [rule] - if not specified it will delete the entire subject group
-   * @returns {this}
-   */
-  deleteBySubjectId (subjectId, ...args) {
-    const ignoreRule = !args.length
-    const rule = !ignoreRule ? this._ruleFromArgs(...args) : null
+  deleteBySubjectId (subjectId: string, firstVal?: AclRule|PermissionsCastable, agents?: Agents) {
+    const rule = firstVal ? this._ruleFromArgs(firstVal, agents) : null
 
     if (this.rules.hasOwnProperty(subjectId)) {
-      if (ignoreRule) {
+      if (!rule) {
         // Delete whole subject group
         delete this.rules[subjectId]
       } else {
@@ -164,8 +148,6 @@ class AclDoc {
   }
 
   /**
-   * @param {Agents} agents
-   * @returns {this}
    * @example
    * // Remove all permissions for one specific webId and public
    * const agents = new Agents()
@@ -173,21 +155,19 @@ class AclDoc {
    * agents.addPublic()
    * doc.deleteAgents(agents)
    */
-  deleteAgents (agents) {
+  deleteAgents (agents: Agents) {
     this.deleteRule(new AclRule(Permissions.ALL, agents))
     return this
   }
 
   /**
-   * @param {Permissions} permissions
-   * @returns {this}
    * @example
    * // Set that no one (!) will be able to use APPEND on this resource
    * // Do not use this with CONTROL, except if you are sure you want that
    * doc.deletePermissions(APPEND)
    */
-  deletePermissions (...permissions) {
-    permissions = Permissions.from(...permissions)
+  deletePermissions (firstVal: PermissionsCastable, ...restPermissions: permissionString[]) {
+    const permissions = Permissions.from(firstVal, ...restPermissions)
 
     for (const [subjectId, rule] of Object.entries(this.rules)) {
       const toDelete = new AclRule(permissions, rule.agents)
@@ -200,15 +180,13 @@ class AclDoc {
    * @description Get all permissions a specific group of agents has
    * Public will not be added automatically to the agents.
    * Only works for single agents
-   * @param {Agents} agents
-   * @returns {Permissions}
    * @example
    * // Check if a specific user has READ permissions
    * const agents = new Agents('https://web.id')
    * const permissions = doc.getPermissionsFor(agents)
    * permissions.has(READ) // true if the user has read permissions
    */
-  getPermissionsFor (agents) {
+  getPermissionsFor (agents: Agents) {
     agents = Agents.from(agents)
 
     const permissions = new Permissions()
@@ -221,8 +199,6 @@ class AclDoc {
   }
 
   /**
-   * @param {Permissions} permissions
-   * @returns {Agents}
    * @example
    * // Get all agents which have WRITE permissions
    * const permissions = new Permissions(WRITE)
@@ -232,8 +208,8 @@ class AclDoc {
    * // You can iterate over the webIds set if you want to list them all
    * [...agents.webIds].forEach(webId => console.log(webId))
    */
-  getAgentsWith (permissions) {
-    permissions = Permissions.from(permissions)
+  getAgentsWith (firstVal: PermissionsCastable, ...restPermissions: permissionString[]) {
+    const permissions = Permissions.from(firstVal, ...restPermissions)
 
     return Object.values(this.rules)
       .filter(rule => rule.permissions.includes(permissions))
@@ -243,7 +219,6 @@ class AclDoc {
 
   /**
    * @description Delete all unused rules
-   * @returns {this}
    */
   minimizeRules () {
     // TODO: Try to merge rules with a subject id starting with defaultSubjectIdBase
@@ -257,19 +232,13 @@ class AclDoc {
 
   /**
    * @description add data which isn't an access restriction
-   * @param {...Quad} other
-   * @returns {this}
    */
-  addOther (...other) {
+  addOther (...other: Quad[]) {
     this.otherQuads.push(...other)
     return this
   }
 
-  /**
-   * @param {AclDoc} other
-   * @returns {boolean}
-   */
-  equals (other) {
+  equals (other: AclDoc) {
     return this.accessTo === other.accessTo &&
       iterableEquals(this.otherQuads, other.otherQuads) &&
       Object.entries(this.rules)
@@ -279,16 +248,8 @@ class AclDoc {
         })
   }
 
-  /**
-   * @param {string} subjectId
-   * @param {AclRule} rule
-   */
-
-  /**
-   * @returns {AclRule}
-   */
-  _ruleFromArgs (permission, agents) {
-    const rule = AclRule.from(permission, agents)
+  _ruleFromArgs (firstVal: AclRule|PermissionsCastable, agents?: AgentsCastable) {
+    const rule = AclRule.from(firstVal, agents)
     rule.accessTo = [ this.accessTo ]
     return rule
   }
@@ -296,10 +257,10 @@ class AclDoc {
   /**
    * @description Get an unused subject id
    * @param {string} [base] - The newly generated id will begin with this base id
-   * @returns {string}
    */
   _getNewSubjectId (base = defaultSubjectIdBase) {
-    let index = Number(base.match(/[\d]*$/)[0]) // Last positive number; 0 if not ending with number
+    const digitMatches = base.match(/[\d]*$/) || ['0']
+    let index = Number(digitMatches[0]) // Last positive number; 0 if not ending with number
     base = base.replace(/[\d]*$/, '')
 
     while (this.rules.hasOwnProperty(base + index)) {

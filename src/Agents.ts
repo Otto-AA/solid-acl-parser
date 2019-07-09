@@ -4,6 +4,8 @@ import { iterableEquals } from './utils'
  * @module Agents
  */
 
+export type AgentsCastable = Agents | string | string[] | undefined
+
 /**
  * @description class describing multiple agents
  * @alias module:Agents
@@ -27,10 +29,12 @@ import { iterableEquals } from './utils'
  * agents.hasPublic() // true
  */
 class Agents {
-  /**
-   * @param {...string} [webIds]
-   */
-  constructor (...webIds) {
+  public readonly webIds: Set<string>
+  public readonly groups: Set<string>
+  public public: boolean
+  public authenticated: boolean
+
+  constructor (...webIds: string[]) {
     this.webIds = new Set()
     this.groups = new Set()
     this.public = false
@@ -39,77 +43,46 @@ class Agents {
     this.addWebId(...webIds)
   }
 
-  /**
-   * @param {...string} [webIds]
-   * @returns {this}
-   */
-  addWebId (...webIds) {
+  addWebId (...webIds: string[]) {
     webIds.forEach(webId => this.webIds.add(webId))
     return this
   }
 
-  /**
-   * @param {...string} webIds
-   * @returns {boolean}
-   */
-  hasWebId (...webIds) {
+  hasWebId (...webIds: string[]) {
     return webIds.every(webId => this.webIds.has(webId))
   }
 
-  /**
-   * @param {...string} webIds
-   * @return {this}
-   */
-  deleteWebId (...webIds) {
+  deleteWebId (...webIds: string[]) {
     webIds.forEach(webId => this.webIds.delete(webId))
     return this
   }
 
-  /**
-   * @param {...string} [groups] - link to vcard:Group
-   * @return {this}
-   */
-  addGroup (...groups) {
+  addGroup (...groups: string[]) {
     groups.forEach(group => this.groups.add(group))
     return this
   }
 
-  /**
-   * @param {...string} groups
-   * @returns {boolean}
-   */
-  hasGroup (...groups) {
+  hasGroup (...groups: string[]) {
     return groups.every(group => this.groups.has(group))
   }
 
-  /**
-   * @param {...string} groups
-   * @returns {this}
-   */
-  deleteGroup (...groups) {
+  deleteGroup (...groups: string[]) {
     groups.forEach(group => this.groups.delete(group))
     return this
   }
 
   /**
    * @description Access is given to everyone
-   * @return {this}
    */
   addPublic () {
     this.public = true
     return this
   }
 
-  /**
-   * @returns {boolean}
-   */
   hasPublic () {
     return this.public
   }
 
-  /**
-   * @returns {this}
-   */
   deletePublic () {
     this.public = false
     return this
@@ -117,69 +90,46 @@ class Agents {
 
   /**
    * @description Access is only given to people who have logged on and provided a specific ID
-   * @returns {this}
    */
   addAuthenticated () {
     this.authenticated = true
     return this
   }
 
-  /**
-   * @returns {boolean}
-   */
   hasAuthenticated () {
     return this.authenticated
   }
 
-  /**
-   * @returns {this}
-   */
   deleteAuthenticated () {
     this.authenticated = false
     return this
   }
 
-  /**
-   * @returns {Agents}
-   */
   clone () {
     const clone = new Agents()
+
     clone.addWebId(...this.webIds)
     clone.addGroup(...this.groups)
-    if (this.hasPublic()) {
-      clone.addPublic()
-    }
-    if (this.hasAuthenticated()) {
-      clone.addAuthenticated()
-    }
+    clone.public = this.public
+    clone.authenticated = this.authenticated
+
     return clone
   }
 
-  /**
-   * @param {Agents} other
-   * @returns {boolean}
-   */
-  equals (other) {
+  equals (other: Agents) {
     return iterableEquals(this.webIds, other.webIds) &&
       iterableEquals(this.groups, other.groups) &&
       this.public === other.public &&
       this.authenticated === other.authenticated
   }
 
-  /**
-   * @param {Agents} other
-   * @returns {boolean}
-   */
-  includes (other) {
+  includes (other: Agents) {
     return this.hasWebId(...other.webIds) &&
       this.hasGroup(...other.groups) &&
       (this.public || !other.public) &&
       (this.authenticated || !other.authenticated)
   }
 
-  /**
-   * @returns {boolean}
-   */
   isEmpty () {
     return this.webIds.size === 0 &&
       this.groups.size === 0 &&
@@ -187,31 +137,28 @@ class Agents {
       !this.authenticated
   }
 
-  /**
-   * @param {Agents|...string|string[]} val
-   * @returns {Agents}
-   */
-  static from (...val) {
-    const firstVal = val[0]
+  static from (firstVal: AgentsCastable): Agents
+  static from (...val: string[]): Agents
+  static from (firstVal: AgentsCastable, ...val: string[]) {
     if (firstVal instanceof Agents) {
       return firstVal.clone()
     }
-    if (typeof firstVal === 'string' || !firstVal) {
-      return new Agents(...val.filter(v => !!v))
-    }
     if (Array.isArray(firstVal)) {
       return new Agents(...firstVal)
+    }
+    if (typeof firstVal === 'string') {
+      return new Agents(...[firstVal, ...val].filter(v => !!v))
+    }
+    if (!firstVal) {
+      return new Agents()
     }
     throw new Error(`Invalid arguments: ${val}`)
   }
 
   /**
    * @description Return all common agents
-   * @param {Agents} first
-   * @param {Agents} second
-   * @returns {Agents}
    */
-  static common (first, second) {
+  static common (first: Agents, second: Agents) {
     const agents = new Agents()
     agents.addWebId(...[...first.webIds].filter(webId => second.hasWebId(webId)))
     agents.addGroup(...[...first.groups].filter(group => second.hasGroup(group)))
@@ -226,11 +173,8 @@ class Agents {
 
   /**
    * @description Return a new Agents instance which includes all agents from first and second
-   * @param {Agents} first
-   * @param {Agents} second
-   * @returns {Agents}
    */
-  static merge (first, second) {
+  static merge (first: Agents, second: Agents) {
     const merged = first.clone()
     merged.addWebId(...second.webIds)
     merged.addGroup(...second.groups)
@@ -242,11 +186,8 @@ class Agents {
 
   /**
    * @description Return all agents from the first which are not in the second
-   * @param {Agents} first
-   * @param {Agents} second
-   * @returns {Agents}
    */
-  static subtract (first, second) {
+  static subtract (first: Agents, second: Agents) {
     const agents = new Agents()
     agents.addWebId(...[...first.webIds].filter(webId => !second.hasWebId(webId)))
     agents.addGroup(...[...first.groups].filter(group => !second.hasGroup(group)))
@@ -259,18 +200,12 @@ class Agents {
     return agents
   }
 
-  /**
-   * @returns {Agents}
-   */
   static get PUBLIC () {
     const agents = new Agents()
     agents.addPublic()
     return agents
   }
 
-  /**
-   * @returns {Agents}
-   */
   static get AUTHENTICATED () {
     const agents = new Agents()
     agents.addAuthenticated()

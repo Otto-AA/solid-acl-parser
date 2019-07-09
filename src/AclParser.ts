@@ -3,16 +3,16 @@ import AclDoc from './AclDoc'
 import prefixes from './prefixes'
 import AclRule from './AclRule'
 import { parseTurtle } from './utils'
+import { permissionString } from './Permissions';
 
 /**
  * @module AclParser
  */
 
-/**
- * @typedef AclParserOptions
- * @property {string} aclUrl - the url of the acl file
- * @property {string} fileUrl - the file for which the permissions will be parsed
- */
+interface AclParserOptions {
+  fileUrl: string
+  aclUrl: string
+}
 
 const predicates = {
   mode: `${prefixes.acl}mode`,
@@ -55,27 +55,23 @@ const types = {
  * })
  */
 class AclParser {
-  /**
-   * @param {AclParserOptions} options
-   */
-  constructor ({ fileUrl, aclUrl }) {
+  private readonly parser: N3.N3Parser
+  private readonly accessTo: string
+  
+  constructor ({ fileUrl, aclUrl }: AclParserOptions) {
     this.parser = new N3.Parser({ baseIRI: aclUrl })
-    this.subjectIdCounter = 0
     this.accessTo = fileUrl
   }
 
-  /**
-   * @param {string} aclTurtle
-   * @returns {Promise<AclDoc>}
-   */
-  async turtleToAclDoc (aclTurtle) {
+
+  async turtleToAclDoc (aclTurtle: string) {
     const data = await parseTurtle(this.parser, aclTurtle)
     const doc = new AclDoc({ accessTo: this.accessTo })
 
     for (const [subjectId, quads] of Object.entries(data)) {
       if (this._isAclRule(quads)) {
         const aclRule = this._quadsToRule(quads)
-        doc.addRule(aclRule, null, { subjectId })
+        doc.addRule(aclRule, undefined, { subjectId })
       } else {
         doc.addOther(...quads)
       }
@@ -84,11 +80,7 @@ class AclParser {
     return doc
   }
 
-  /**
-   * @param {N3.Quad[]} quads
-   * @returns {AclRule}
-   */
-  _quadsToRule (quads) {
+  _quadsToRule (quads: N3.Quad[]) {
     const rule = new AclRule()
 
     for (const quad of quads) {
@@ -101,27 +93,19 @@ class AclParser {
     return rule
   }
 
-  /**
-   * @param {N3.Quad[]} quads
-   * @returns {boolean}
-   */
-  _isAclRule (quads) {
+  _isAclRule (quads: N3.Quad[]) {
     return quads.some(({ predicate, object: { value } }) => {
       return predicate.id === predicates.type &&
         value === types.authorization
     })
   }
 
-  /**
-   * @param {AclRule} rule
-   * @param {N3.Quad} quad
-   */
-  _addQuadToRule (rule, quad) {
+  _addQuadToRule (rule: AclRule, quad: N3.Quad) {
     const { predicate, object: { value } } = quad
 
     switch (predicate.id) {
       case predicates.mode:
-        rule.permissions.add(value)
+        rule.permissions.add(value as permissionString)
         break
 
       case predicates.accessTo:
@@ -170,11 +154,7 @@ class AclParser {
     }
   }
 
-  /**
-   * @param {AclDoc} doc
-   * @returns {Promise<string>}
-   */
-  aclDocToTurtle (doc) {
+  aclDocToTurtle (doc: AclDoc) {
     const writer = new N3.Writer({ prefixes })
 
     doc.minimizeRules()
@@ -197,15 +177,9 @@ class AclParser {
     })
   }
 
-  /**
-   * @param {string} subjectId
-   * @param {AclRule} rule
-   * @returns {N3.Quad[]}
-   */
-  _ruleToQuads (subjectId, rule) {
+  _ruleToQuads (subjectId: string, rule: AclRule) {
     const { DataFactory: { quad, namedNode } } = N3
     const quads = []
-    subjectId = subjectId || ('acl-parser-subject-' + this.subjectIdCounter++)
 
     quads.push(quad(
       namedNode(subjectId),
