@@ -3,7 +3,7 @@ const path = require('path')
 // Configurations shared between all builds
 const common = {
   mode: 'production',
-  entry: ['babel-polyfill', './src/index.ts'],
+  entry: ['core-js/stable', 'regenerator-runtime/runtime', './src/index.ts'],
   output: {
     filename: 'solid-acl-parser.bundle.js',
     library: 'SolidAclParser',
