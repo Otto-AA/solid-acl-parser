@@ -154,7 +154,7 @@ class AclParser {
     }
   }
 
-  aclDocToTurtle (doc: AclDoc) {
+  aclDocToTurtle (doc: AclDoc): Promise<string> {
     const writer = new N3.Writer({ prefixes })
 
     doc.minimizeRules()
@@ -167,7 +167,7 @@ class AclParser {
     quads.push(...doc.otherQuads)
     writer.addQuads(quads)
 
-    return new Promise((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
       writer.end((error, result) => {
         if (error) {
           return reject(error)

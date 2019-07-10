@@ -16,8 +16,6 @@ interface AddRuleOptions {
   subjectId?: string
 }
 
-const defaultSubjectIdBase = 'solid-acl-parser-rule-'
-
 /**
  * @description Class for storing information of an acl file
  * @alias module:AclDoc
@@ -258,7 +256,7 @@ class AclDoc {
    * @description Get an unused subject id
    * @param {string} [base] - The newly generated id will begin with this base id
    */
-  _getNewSubjectId (base = defaultSubjectIdBase) {
+  _getNewSubjectId (base = this._defaultSubjectId) {
     const digitMatches = base.match(/[\d]*$/) || ['0']
     let index = Number(digitMatches[0]) // Last positive number; 0 if not ending with number
     base = base.replace(/[\d]*$/, '')
@@ -267,6 +265,10 @@ class AclDoc {
       index++
     }
     return base + index
+  }
+
+  get _defaultSubjectId () {
+    return this.accessTo + '#solid-acl-parser-rule-'
   }
 }
 
