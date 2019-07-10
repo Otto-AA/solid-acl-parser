@@ -125,5 +125,6 @@ declare class AclDoc {
      * @param {string} [base] - The newly generated id will begin with this base id
      */
     _getNewSubjectId(base?: string): string;
+    readonly _defaultSubjectId: string;
 }
 export default AclDoc;

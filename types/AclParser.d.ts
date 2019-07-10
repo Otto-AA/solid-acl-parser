@@ -36,7 +36,7 @@ declare class AclParser {
     _quadsToRule(quads: N3.Quad[]): AclRule;
     _isAclRule(quads: N3.Quad[]): boolean;
     _addQuadToRule(rule: AclRule, quad: N3.Quad): void;
-    aclDocToTurtle(doc: AclDoc): Promise<unknown>;
+    aclDocToTurtle(doc: AclDoc): Promise<string>;
     _ruleToQuads(subjectId: string, rule: AclRule): N3.Quad[];
 }
 export default AclParser;
