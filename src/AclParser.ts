@@ -216,7 +216,7 @@ class AclParser {
       ))
     }
     // accessTo
-    for (const uri of rule.accessTo) { // TODO: Check if uri is the correct term
+    for (const uri of rule.accessTo) {
       quads.push(quad(
         namedNode(subjectId),
         namedNode(predicates.accessTo),

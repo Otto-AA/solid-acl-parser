@@ -154,7 +154,7 @@ class AclDoc {
    * doc.deleteAgents(agents)
    */
   deleteAgents (agents: Agents) {
-    this.deleteRule(new AclRule(Permissions.ALL, agents))
+    this.deleteRule(this._ruleFromArgs(Permissions.ALL, agents))
     return this
   }
 
@@ -168,7 +168,7 @@ class AclDoc {
     const permissions = Permissions.from(firstVal, ...restPermissions)
 
     for (const [subjectId, rule] of Object.entries(this.rules)) {
-      const toDelete = new AclRule(permissions, rule.agents)
+      const toDelete = this._ruleFromArgs(permissions, rule.agents)
       this.deleteBySubjectId(subjectId, toDelete)
     }
     return this
@@ -210,6 +210,7 @@ class AclDoc {
     const permissions = Permissions.from(firstVal, ...restPermissions)
 
     return Object.values(this.rules)
+      .filter(rule => rule.accessTo.includes(this.accessTo))
       .filter(rule => rule.permissions.includes(permissions))
       .map(rule => rule.agents)
       .reduce(Agents.merge, Agents.from())
@@ -247,8 +248,10 @@ class AclDoc {
   }
 
   _ruleFromArgs (firstVal: AclRule|PermissionsCastable, agents?: AgentsCastable) {
-    const rule = AclRule.from(firstVal, agents)
-    rule.accessTo = [ this.accessTo ]
+    const rule = AclRule.from(firstVal, agents, [this.accessTo])
+    if (!rule.accessTo.length) {
+      rule.accessTo.push(this.accessTo)
+    }
     return rule
   }
 

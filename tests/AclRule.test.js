@@ -69,67 +69,6 @@ describe('equals', () => {
   })
 })
 
-/*
-describe('includes', () => {
-  test('returns true for equal AclRules', () => {
-    const options = {
-      otherQuads: [],
-      default: 'a-default',
-      defaultForNew: 'a-default-for-new'
-    }
-    const first = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos, options)
-    const second = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos, options)
-    expect(first.includes(second)).toBe(true)
-    expect(second.includes(first)).toBe(true)
-  })
-  test('returns true if first contains more permissions than second', () => {
-    const first = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos)
-    const second = new AclRule(READ, sampleWebIds, sampleAccessTos)
-    expect(first.includes(second)).toBe(true)
-  })
-  test('returns false if first contains less permissions than second', () => {
-    const first = new AclRule(READ, sampleWebIds, sampleAccessTos)
-    const second = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos)
-    expect(first.includes(second)).toBe(false)
-  })
-  test('returns true if first contains more webIds than second', () => {
-    const first = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos)
-    const second = new AclRule([READ, WRITE], sampleWebIds.slice(1), sampleAccessTos)
-    expect(first.includes(second)).toBe(true)
-  })
-  test('returns false if first contains less webIds than second', () => {
-    const first = new AclRule([READ, WRITE], sampleWebIds.slice(1), sampleAccessTos)
-    const second = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos)
-    expect(first.includes(second)).toBe(false)
-  })
-  test('returns true if first contains more accessTos than second', () => {
-    const first = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos)
-    const second = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos.slice(1))
-    expect(first.includes(second)).toBe(true)
-  })
-  test('returns false if first contains less accessTos than second', () => {
-    const first = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos.slice(1))
-    const second = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos)
-    expect(first.includes(second)).toBe(false)
-  })
-  test('returns true if first contains more otherQuads than second', () => {
-    const first = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos, { otherQuads: [{}] })
-    const second = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos, { otherQuads: [] })
-    expect(first.includes(second)).toBe(true)
-  })
-  test('returns false if first contains less otherQuads than second', () => {
-    const first = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos, { otherQuads: [] })
-    const second = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos, { otherQuads: [{}] })
-    expect(first.includes(second)).toBe(false)
-  })
-  test('returns false if the default options is different', () => {
-    const first = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos, { default: 'first' })
-    const second = new AclRule([READ, WRITE], sampleWebIds, sampleAccessTos, { default: 'second' })
-    expect(first.equals(second)).toBe(false)
-  })
-})
-*/
-
 describe('hasNoEffect', () => {
   test('returns false on an AclRule with permissions, agents and accessTo', () => {
     expect(AclRule.from(READ, 'web.id', './file.ext').hasNoEffect()).toBe(false)
@@ -226,9 +165,9 @@ describe('AclRule.subtract', () => {
   })
   test('creates new AclRules which cover all values of first which are not in second', () => {
     const first = AclRule.from([READ, WRITE], sampleWebIds, sampleAccessTos)
-    const second = AclRule.from(READ, sampleWebIds[0], sampleAccessTos.slice(2))
+    const second = AclRule.from(READ, sampleWebIds[0], sampleAccessTos.slice(1))
 
-    const [res1, res2] = AclRule.subtract(first, second)
+    const [res1, res2, res3] = AclRule.subtract(first, second)
     expect(res1).toBeDefined()
     expect(res2).toBeDefined()
 
@@ -236,15 +175,26 @@ describe('AclRule.subtract', () => {
     expect(res1.permissions.has(READ, WRITE)).toBe(true)
     expect(res1.agents.hasWebId(sampleWebIds[0])).toBe(false)
     expect(res1.agents.hasWebId(...sampleWebIds.slice(1))).toBe(true)
+    expect(res1.accessTo).toEqual(sampleAccessTos.slice(1))
 
     // Second one has modified permissions and only the affected agents
     expect(res2.permissions.has(READ)).toBe(false)
     expect(res2.permissions.has(WRITE)).toBe(true)
     expect(res2.agents.hasWebId(sampleWebIds[0])).toBe(true)
     expect(res2.agents.hasWebId(...sampleWebIds.slice(1))).toBe(false)
+    expect(res2.accessTo).toEqual(sampleAccessTos.slice(1))
+    
+    // Third one has unmodified agents and permissions, but only the not common accessTos
+    expect(res3.permissions.equals(first.permissions)).toBe(true)
+    expect(res3.agents.equals(first.agents)).toBe(true)
+    expect(res3.accessTo).toEqual([sampleAccessTos[0]])
+  })
+  test('creates only one rule if everything is different', () => {
+    const first = AclRule.from(READ, sampleWebIds[0], sampleAccessTos[0])
+    const second = AclRule.from(WRITE, sampleWebIds[1], sampleAccessTos[1])
+    const responses = AclRule.subtract(first, second)
 
-    // accessTo is not modified
-    expect(res1.accessTo).toEqual(first.accessTo)
-    expect(res2.accessTo).toEqual(first.accessTo)
+    expect(responses).toHaveLength(1)
+    expect(responses[0].equals(first)).toBe(true)
   })
 })
