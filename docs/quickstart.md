@@ -3,6 +3,18 @@ In this section the basic usage will be explained which should be sufficient for
 
 ## Installing
 
+### Via NPM
+Install it via npm
+```sh
+npm install --save solid-acl-parser
+```
+Then import it into your code
+```javascript
+const SolidAclParser = require('solid-acl-parser')
+const { AclParser, AclDoc, AclRule, Permissions, Agents } = SolidAclParser
+const { READ, WRITE, APPEND, CONTROL } = Permissions
+```
+
 ### Via CDN
 Just add the script tag with the link to the CDN to your html and you can use SolicAclParser afterwards. To only match a specific version you can use "https://cdn.jsdelivr.net/npm/solid-acl-parser@0.0.1/dist/browser/solid-acl-parser.bundle.js" or similar.
 
@@ -18,18 +30,6 @@ Just add the script tag with the link to the CDN to your html and you can use So
 
 ### Downloading the build files
 You can download the build files from the CDN link above and store it to your website. Then do the same, except for using `src="./path/to/solid-acl-parser.bundle.js"`
-
-### Via NPM
-Install it via npm
-```sh
-npm install --save solid-acl-parser
-```
-Then import it into your code
-```javascript
-const SolidAclParser = require('solid-acl-parser')
-const { AclParser, AclDoc, AclRule, Permissions, Agents } = SolidAclParser
-const { READ, WRITE, APPEND, CONTROL } = Permissions
-```
 
 
 ## Basic example
@@ -100,7 +100,7 @@ const webIds = [
 // We will create a new doc here. In general you will likely get it from parsing a turtle
 const doc = new AclDoc({ accessTo: 'https://pod.example.org/foo/bar.ext' })
 
-// The first parameter can be an array of permissions or single permission
+// The first parameter can be an array of permissions or a single permission
 // The second parameter can be an array of webIds or a single webId
 doc.addRule(READ, webIds)
 doc.addRule([WRITE, CONTROL], webIds[1])
