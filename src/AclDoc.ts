@@ -10,6 +10,7 @@ import { Quad } from 'n3';
 
 interface AclDocOptions {
   accessTo: string // Url to the file/folder which will be granted access to
+  strict?: boolean // Throw on possible errors
 }
 
 interface AddRuleOptions {
@@ -37,11 +38,13 @@ interface AddRuleOptions {
  */
 class AclDoc {
   public readonly accessTo: string
+  public readonly strict: boolean
   public rules: Record<string, AclRule>
   public otherQuads: Quad[]
   
-  constructor ({ accessTo }: AclDocOptions) {
+  constructor ({ accessTo, strict = true }: AclDocOptions) {
     this.accessTo = accessTo
+    this.strict = strict
     this.rules = {}
     this.otherQuads = []
   }
@@ -67,6 +70,17 @@ class AclDoc {
   }
 
   /**
+   * @description Adds a default rule which will be inherited by childs if they have no permissions set
+   * Only makes sense on folders
+   */
+  addDefaultRule (firstVal: AclRule|PermissionsCastable, agents?: Agents, options: AddRuleOptions = {}) {
+    const rule = this._ruleFromArgs(firstVal, agents)
+    rule.default = this.accessTo
+    
+    return this.addRule(rule, undefined, options)
+  }
+
+  /**
    * @example
    * doc.addRule([READ, WRITE], ['https://first.web.id', 'https://second.web.id'])
    * doc.hasRule(READ, 'https://first.web.id') // true
@@ -89,6 +103,13 @@ class AclDoc {
 
         return rulesToCheck.length === 0
       })
+  }
+
+  hasDefaultRule (firstVal: AclRule|PermissionsCastable, agents?: Agents) {
+    const rule = this._ruleFromArgs(firstVal, agents)
+    rule.default = this.accessTo
+
+    return this.hasRule(rule)
   }
 
   /**
@@ -210,7 +231,7 @@ class AclDoc {
     const permissions = Permissions.from(firstVal, ...restPermissions)
 
     return Object.values(this.rules)
-      .filter(rule => rule.accessTo.includes(this.accessTo))
+      .filter(rule => rule.accessTo === this.accessTo)
       .filter(rule => rule.permissions.includes(permissions))
       .map(rule => rule.agents)
       .reduce(Agents.merge, Agents.from())
@@ -248,11 +269,27 @@ class AclDoc {
   }
 
   _ruleFromArgs (firstVal: AclRule|PermissionsCastable, agents?: AgentsCastable) {
-    const rule = AclRule.from(firstVal, agents, [this.accessTo])
-    if (!rule.accessTo.length) {
-      rule.accessTo.push(this.accessTo)
+    const rule = AclRule.from(firstVal, agents, this.accessTo)
+    if (!rule.accessTo) {
+      rule.accessTo = this.accessTo
     }
+    this._assertValidRule(rule)
+
     return rule
+  }
+
+  _assertValidRule (rule: AclRule) {
+    if (this.strict) {
+      if (rule.accessTo !== this.accessTo) {
+        throw new Error(`Invalid accessTo: Found ${rule.accessTo} Expected ${this.accessTo}`)
+      }
+      if (rule.default && rule.default !== this.accessTo) {
+        throw new Error(`Invalid default: Found ${rule.default} Expected ${this.accessTo}`)
+      }
+      if (rule.defaultForNew && rule.defaultForNew !== this.accessTo) {
+        throw new Error(`Invalid defaultForNew: Found ${rule.defaultForNew} Expected ${this.accessTo}`)
+      }
+    }
   }
 
   /**

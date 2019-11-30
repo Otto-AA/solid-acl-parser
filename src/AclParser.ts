@@ -109,7 +109,7 @@ class AclParser {
         break
 
       case predicates.accessTo:
-        rule.accessTo.push(value)
+        rule.accessTo = value
         break
 
       case predicates.agent:
@@ -216,11 +216,11 @@ class AclParser {
       ))
     }
     // accessTo
-    for (const uri of rule.accessTo) {
+    if (rule.accessTo) {
       quads.push(quad(
         namedNode(subjectId),
         namedNode(predicates.accessTo),
-        namedNode(uri)
+        namedNode(rule.accessTo)
       ))
     }
     // Provides default permissions for contained items?

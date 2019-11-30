@@ -16,8 +16,7 @@ const accessTos = [
   'https://example.org/second/file.ext',
   'https://example.org/third/xyz.ext'
 ]
-// TODO: Test that only the default accessTo value is affected
-//       if not explicitely specified.
+
 const accessTo = accessTos[0]
 
 const sampleRules = [
@@ -52,9 +51,39 @@ describe('addRule', () => {
   })
   test('automatically adds accessTo if not specified', () => {
     doc.addRule(new AclRule(READ, sampleWebIds))
-    expect(doc.rules[Object.keys(doc.rules)[0]].accessTo[0]).toBe(accessTo)
+    expect(doc.rules[Object.keys(doc.rules)[0]].accessTo).toBe(accessTo)
   })
-  test.todo('can use multiple custom accessTo values')
+  test('throws when trying to add different accessTo in strict mode', () => {
+    expect(() => doc.addRule(new AclRule(READ, sampleWebIds, accessTos[1]))).toThrow(/Invalid accessTo/)
+  })
+  test('can add different accessTo in non-strict mode', () => {
+    doc.strict = false
+    doc.addRule(new AclRule(READ, sampleWebIds, accessTos[1]))
+  })
+  test('throws when trying to add different default in strict mode', () => {
+    expect(() => doc.addRule(new AclRule(READ, sampleWebIds, accessTos[1]))).toThrow(/Invalid accessTo/)
+    expect(() => doc.addRule(new AclRule(READ, sampleWebIds, undefined, { default: 'xyz' }))).toThrow(/Invalid default/)
+    expect(() => doc.addRule(new AclRule(READ, sampleWebIds, undefined, { defaultForNew: 'xyz' }))).toThrow(/Invalid defaultForNew/)
+  })
+})
+
+describe('addDefaultRule', () => {
+  test('adds default rule', () => {
+    doc.addDefaultRule(READ, sampleWebIds, { subjectId: 'test' })
+    expect(doc.hasRule(READ, sampleWebIds)).toBe(true)
+    expect(doc.rules['test'].default).toBe(accessTo)
+  })
+})
+
+describe('hasDefaultRule', () => {
+  test('returns true if a default rule has been added', () => {
+    doc.addDefaultRule(READ, sampleWebIds)
+    expect(doc.hasDefaultRule(READ, sampleWebIds)).toBe(true)
+  })
+  test('returns false if a rule without default value has been added', () => {
+    doc.addRule(READ, sampleWebIds)
+    expect(doc.hasDefaultRule(READ, sampleWebIds)).toBe(false)
+  })
 })
 
 describe('hasRule', () => {
@@ -65,10 +94,12 @@ describe('hasRule', () => {
     expect(doc.hasRule(READ, Agents.PUBLIC)).toBe(true)
   })
   test('returns false if a different accessTo has been added', () => {
+    doc.strict = false
     doc.addRule(new AclRule(READ, sampleWebIds, accessTos[1]))
     expect(doc.hasRule(READ, sampleWebIds)).toBe(false)
   })
   test('returns true if a different accessTo has been added and is asked for', () => {
+    doc.strict = false
     doc.addRule(new AclRule(READ, sampleWebIds, accessTos[1]))
     expect(doc.hasRule(new AclRule(READ, sampleWebIds, accessTos[1]))).toBe(true)
   })
@@ -145,6 +176,11 @@ describe('deleteBySubjectId', () => {
     expect(doc.hasRule(WRITE, sampleWebIds[0])).toBe(true)
     expect(Object.keys(doc.rules)).toHaveLength(2)
   })
+  test('does not modify doc if not found', () => {
+    doc.addRule(READ, sampleWebIds, { subjectId: '#my-id' })
+    doc.deleteBySubjectId('#not-my-id')
+    expect(doc.hasRule(READ, sampleWebIds)).toBe(true)
+  })
 })
 
 describe('deleteRule', () => {
@@ -165,6 +201,7 @@ describe('deleteRule', () => {
     expect(doc.hasRule([WRITE, CONTROL], sampleWebIds[0])).toBe(true)
   })
   test('does not affect different accessTo', () => {
+    doc.strict = false
     const rule = new AclRule([READ, WRITE], sampleWebIds, accessTos[1])
     doc.addRule(rule)
     doc.deleteRule([READ, WRITE], sampleWebIds)
@@ -188,6 +225,7 @@ describe('deletePermissions', () => {
     expect(doc.hasRule(APPEND, sampleWebIds[2])).toBe(true)
   })
   test('does not affect rules with a different accessTo', () => {
+    doc.strict = false
     const rule = new AclRule(READ, sampleWebIds, accessTos[1])
     doc.addRule(rule)
     doc.deletePermissions(READ)
@@ -211,6 +249,7 @@ describe('deleteAgents', () => {
     expect(doc.hasRule([READ, WRITE], sampleWebIds.slice(1))).toBe(true)
   })
   test('does not affect rules with a different accessTo', () => {
+    doc.strict = false
     const rule = new AclRule(READ, Agents.PUBLIC, accessTos[1])
     doc.addRule(rule)
     doc.deleteAgents(Agents.PUBLIC)
@@ -238,6 +277,7 @@ describe('getPermissionsFor', () => {
     expect(permissions.has(WRITE)).toBe(false)
   })
   test('does not include permissions for different accessTo', () => {
+    doc.strict = false
     doc.addRule(new AclRule(READ, Agents.PUBLIC))
     doc.addRule(new AclRule(WRITE, Agents.PUBLIC, accessTos[1]))
 
@@ -270,6 +310,7 @@ describe('getAgentsWith', () => {
     expect(agents.hasWebId(sampleWebIds[2])).toBe(false)
   })
   test('does not include agents for different accessTo', () => {
+    doc.strict = false
     doc.addRule(READ, Agents.PUBLIC)
     doc.addRule(new AclRule(READ, Agents.AUTHENTICATED, accessTos[1]))
 
@@ -311,7 +352,7 @@ describe('equals', () => {
     expect(doc.equals(otherDoc)).toBe(false)
   })
   test('returns false if rules have different accessTo', () => {
-    const otherDoc = new AclDoc({ accessTo })
+    const otherDoc = new AclDoc({ accessTo, strict: false })
     doc.addRule(new AclRule(READ, sampleWebIds))
     otherDoc.addRule(new AclRule(READ, sampleWebIds, accessTos[1]))
     expect(doc.equals(otherDoc)).toBe(false)

@@ -34,15 +34,15 @@ interface AclRuleOptions {
 class AclRule {
   public permissions: Permissions
   public agents: Agents
-  public accessTo: string[]
+  public accessTo?: string
   public otherQuads: Quad[]
   public default?: string
   public defaultForNew?: string
 
-  constructor (permissions?: PermissionsCastable, agents?: AgentsCastable, accessTo: string[]|string = [], options: AclRuleOptions = {}) {
+  constructor (permissions?: PermissionsCastable, agents?: AgentsCastable, accessTo?: string, options: AclRuleOptions = {}) {
     this.permissions = Permissions.from(permissions)
     this.agents = Agents.from(agents)
-    this.accessTo = Array.isArray(accessTo) ? [...accessTo] : [ accessTo ]
+    this.accessTo = accessTo
     this.otherQuads = options.otherQuads ? [...options.otherQuads] : []
     this.default = options.default
     this.defaultForNew = options.defaultForNew
@@ -56,7 +56,7 @@ class AclRule {
 
   equals (other: AclRule) {
     return iterableEquals(this.otherQuads, other.otherQuads) &&
-      iterableEquals(this.accessTo, other.accessTo) &&
+      this.accessTo == other.accessTo &&
       this.permissions.equals(other.permissions) &&
       this.agents.equals(other.agents) &&
       this.default === other.default &&
@@ -71,11 +71,11 @@ class AclRule {
     return this.otherQuads.length === 0 && (
       this.permissions.isEmpty() ||
       this.agents.isEmpty() ||
-      this.accessTo.length === 0
+      !this.accessTo
     )
   }
 
-  static from (firstVal: AclRule|PermissionsCastable, agents?: AgentsCastable, accessTo: string[] = [], options?: AclRuleOptions) {
+  static from (firstVal: AclRule|PermissionsCastable, agents?: AgentsCastable, accessTo?: string, options?: AclRuleOptions) {
     if (firstVal instanceof AclRule) {
       return firstVal.clone()
     }
@@ -83,25 +83,11 @@ class AclRule {
   }
 
   /**
-   * @description Return a new rule with all common permissions, agents, accessTo and quads
-   */
-  static common (first: AclRule, second: AclRule) {
-    const permissions = Permissions.common(first.permissions, second.permissions)
-    const agents = Agents.common(first.agents, second.agents)
-    const accessTo = first.accessTo.filter(val => second.accessTo.includes(val))
-
-    const options: AclRuleOptions = {}
-    options.otherQuads = first.otherQuads.filter(quad => second.otherQuads.some(otherQuad => quad.equals(otherQuad)))
-    options.default = (first.default === second.default) ? first.default : undefined
-    options.defaultForNew = (first.defaultForNew === second.defaultForNew) ? first.defaultForNew : undefined
-
-    return new AclRule(permissions, agents, accessTo, options)
-  }
-
-  /**
    * @description Return new rules with all rules from the first which aren't in the second
    * If the neither the agents nor the permissions are equal, it is split up into two rules
-   * otherQuads will be set to the first one
+   * otherQuads will be set to the first one.
+   * If accessTo is not equal or the first has a default value and it is not equal to the other
+   * it returns a copy of the first.
    * @returns {AclRule[]} Array containing zero, one or two AclRule instances.
    * If two are returned, the first one is the rule for the unaffected agents
    * @example
@@ -117,23 +103,20 @@ class AclRule {
     const rules: AclRule[] = []
     const firstOptions = AclRule._getOptions(first)
 
-    const unaffectedAccessTos = first.accessTo.filter(accessTo => !second.accessTo.includes(accessTo))
-    const commonAccessTos = first.accessTo.filter(accessTo => second.accessTo.includes(accessTo))
+    if ((first.default && first.default !== second.default)
+        || first.accessTo !== second.accessTo)
+      return [first.clone()]
 
     // Add rule for all unaffected agents
     // e.g. AclRule([READ, WRITE], ['web', 'id']) - AclRule([READ, WRITE], 'web') = AclRule([READ, WRITE], 'id')
     const unaffectedAgents = Agents.subtract(first.agents, second.agents)
-    rules.push(new AclRule(first.permissions, unaffectedAgents, commonAccessTos, firstOptions))
+    rules.push(new AclRule(first.permissions, unaffectedAgents, first.accessTo, firstOptions))
 
     // Add rule for all unaffected permissions but affected agents
     // e.g. AclRule([READ, WRITE], 'web') - AclRule(READ, 'web') = AclRule(READ, 'web')
     const unaffectedPermissions = Permissions.subtract(first.permissions, second.permissions)
     const commonAgents = Agents.common(first.agents, second.agents)
-    rules.push(new AclRule(unaffectedPermissions, commonAgents, commonAccessTos, firstOptions))
-
-    // Add rule for all unaffected accessTo's
-    // e.g. AclRule(READ, 'id', ['first', 'second']) - AclRule(READ, 'id', ['first']) = AclRule(READ, 'id', ['second'])
-    rules.push(new AclRule(first.permissions, first.agents, unaffectedAccessTos, firstOptions))
+    rules.push(new AclRule(unaffectedPermissions, commonAgents, first.accessTo, firstOptions))
 
     return rules.filter(rule => !rule.hasNoEffect())
   }
