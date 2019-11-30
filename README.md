@@ -6,10 +6,6 @@ A js library for working with acl files. It allows you to parse the turtle repre
 If you don't want to manually fetch and update the acl file, you can take a look at [solid-acl-utils](https://github.com/Otto-AA/solid-acl-utils).
 
 
-# Status of the project
-Everything which seems necessary has been implemented. It is not well tested, but _should work_.
-
-
 # Documentation
 Please refer to this website for documentation: https://otto-aa.github.io/solid-acl-parser/
 
@@ -31,7 +27,7 @@ const turtle = `
     a               acl:Authorization;
     acl:agentClass  foaf:Agent;                               # everyone
     acl:mode        acl:Read;                                 # has Read-only access
-    acl:accessTo    <https://alice.databox.me/profile/card>.`
+    acl:accessTo    <https://pod.example.org/private/file.ext>.`
 
 const { AclParser, Permissions } = SolidAclParser
 const { WRITE, CONTROL } = Permissions

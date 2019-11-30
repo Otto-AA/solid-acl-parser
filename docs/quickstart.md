@@ -16,7 +16,7 @@ const { READ, WRITE, APPEND, CONTROL } = Permissions
 ```
 
 ### Via CDN
-Just add the script tag with the link to the CDN to your html and you can use SolicAclParser afterwards. To only match a specific version you can use "https://cdn.jsdelivr.net/npm/solid-acl-parser@0.0.1/dist/browser/solid-acl-parser.bundle.js" or similar.
+Just add the script tag with the link to the CDN to your html and you can use SolicAclParser afterwards. To only match a specific version you should use "https://cdn.jsdelivr.net/npm/solid-acl-parser@0.0.1/dist/browser/solid-acl-parser.bundle.js" or similar.
 
 ```text/html
 <script type="application/javascript" src="https://cdn.jsdelivr.net/npm/solid-acl-parser/dist/browser/solid-acl-parser.bundle.js"></script>
@@ -49,7 +49,7 @@ const turtle = `
     a               acl:Authorization;
     acl:agentClass  foaf:Agent;                               # everyone
     acl:mode        acl:Read;                                 # has Read-only access
-    acl:accessTo    <https://alice.databox.me/profile/card>.`
+    acl:accessTo    <https://pod.example.org/private/file.ext>.`
 
 const { AclParser, Permissions } = SolidAclParser
 const { WRITE, CONTROL } = Permissions
@@ -78,7 +78,7 @@ Output turtle
     acl:agentClass foaf:Agent;
     acl:accessTo <https://pod.example.org/private/file.ext>;
     acl:mode acl:Read.
-<solid-acl-parser-rule-0> a acl:Authorization;
+<https://pod.example.org/private/file.ext#solid-acl-parser-rule-0> a acl:Authorization;
     acl:agent <https://solid.example.org/profile/card#me>;
     acl:accessTo <https://pod.example.org/private/file.ext>;
     acl:mode acl:Write, acl:Control.
@@ -147,7 +147,7 @@ const { READ, WRITE, CONTROL } = Permissions
 
 const doc = new AclDoc({ accessTo: 'https://pod.example.org/foo/' })
 
-// Note: If you only want to target public you can use Agents.PUBLIC
+// Note: Following two lines are the same as using Agents.PUBLIC
 const agents = new Agents()
 agents.addPublic()
 
@@ -204,4 +204,25 @@ console.log(permissions.has(READ)) // false (It doesn't include Public permissio
 console.log(permissions.has(WRITE)) // true
 console.log(permissions.has(CONTROL)) // true
 console.log([...permissions]) // ["http://www.w3.org/ns/auth/acl#Write", "http://www.w3.org/ns/auth/acl#Control"]
+```
+
+### Working with default
+In Solid you can specify a default value for folders, which will be used by childs if they don't have an own acl file.
+The AclDoc provides two utility methods for creating those and checking if they exist.
+
+```javascript
+const { AclDoc, Permissions, Agents } = SolidAclParser
+const { READ, WRITE, CONTROL } = Permissions
+const webId = 'https://solid.example.org/public/card#me'
+const accessTo = 'https://pod.example.org/foo/'
+
+const doc = new AclDoc({ accessTo })
+
+// Give the webId read access to contents of this folder per default
+doc.addDefaultRule(READ, webId)  // same as doc.addRule(new AclRule(READ, webId, { default: accessTo }))
+doc.addRule(WRITE, webId)
+
+console.log(doc.hasDefaultRule(READ, webId)) // true
+console.log(doc.hasDefaultRule(WRITE, webId)) // false
+console.log(doc.hasRule([READ, WRITE], webId)) // true
 ```
