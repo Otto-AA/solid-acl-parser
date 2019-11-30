@@ -20,21 +20,6 @@ interface AddRuleOptions {
 /**
  * @description Class for storing information of an acl file
  * @alias module:AclDoc
- * @example
- * // Create a new AclDoc
- * // We can specify a default accessTo value here. If not specified we will need to add it to the AclRule's
- * const { READ } = Permissions
- * const webId = 'https://solid.example.org/profile/card#me'
- *
- * const doc = new AclDoc({ accessTo: 'https://solid.example.org/foo/file.ext' })
- *
- * // Give one user all permissions (READ, WRITE, APPEND and CONTROL)
- * // We can add a subjectId, else it will be generated automatically
- * doc.addRule(new AclRule(Permissions.ALL, webId), '#owner')
- *
- * // Give everyone read access
- * doc.addRule(new AclRule(READ, Agents.PUBLIC))
- *
  */
 class AclDoc {
   public readonly accessTo: string
@@ -269,7 +254,7 @@ class AclDoc {
   }
 
   _ruleFromArgs (firstVal: AclRule|PermissionsCastable, agents?: AgentsCastable) {
-    const rule = AclRule.from(firstVal, agents, this.accessTo)
+    const rule = AclRule.from(firstVal, agents)
     if (!rule.accessTo) {
       rule.accessTo = this.accessTo
     }

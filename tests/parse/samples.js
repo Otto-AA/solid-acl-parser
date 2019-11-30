@@ -134,7 +134,7 @@ const samples = [
     getAclDoc () {
       const doc = new AclDoc({ accessTo: this.fileUrl })
 
-      const rule = new AclRule([READ, WRITE, CONTROL], 'https://alice.databox.me/profile/card#me', undefined, { default: this.fileUrl })
+      const rule = new AclRule([READ, WRITE, CONTROL], 'https://alice.databox.me/profile/card#me', { default: this.fileUrl })
       doc.addRule(rule, null, { subjectId: `${this.aclUrl}#authorization1` })
 
       return doc
@@ -166,10 +166,10 @@ const samples = [
     getAclDoc () {
       const doc = new AclDoc({ accessTo: this.fileUrl })
 
-      const ownerRule = new AclRule([READ, WRITE, CONTROL], 'https://example.solid.community/profile/card#me', undefined, { default: this.fileUrl, defaultForNew: this.fileUrl })
+      const ownerRule = new AclRule([READ, WRITE, CONTROL], 'https://example.solid.community/profile/card#me', { default: this.fileUrl, defaultForNew: this.fileUrl })
       doc.addRule(ownerRule, null, { subjectId: `${this.aclUrl}#owner` })
 
-      const publicRule = new AclRule(READ, Agents.PUBLIC, undefined, { default: this.fileUrl, defaultForNew: this.fileUrl })
+      const publicRule = new AclRule(READ, Agents.PUBLIC, { default: this.fileUrl, defaultForNew: this.fileUrl })
       doc.addRule(publicRule, null, { subjectId: `${this.aclUrl}#public` })
 
       return doc
@@ -192,7 +192,7 @@ const samples = [
     getAclDoc () {
       const doc = new AclDoc({ accessTo: this.fileUrl })
 
-      const ownerRule = new AclRule([READ, WRITE, CONTROL], 'https://example.solid.community/profile/card#me', undefined, { default: this.fileUrl, defaultForNew: this.fileUrl })
+      const ownerRule = new AclRule([READ, WRITE, CONTROL], 'https://example.solid.community/profile/card#me', { default: this.fileUrl, defaultForNew: this.fileUrl })
       doc.addRule(ownerRule, null, { subjectId: `${this.aclUrl}#owner` })
 
       return doc
@@ -228,7 +228,7 @@ const samples = [
     getAclDoc () {
       const doc = new AclDoc({ accessTo: this.fileUrl })
       const agents = new Agents('https://example.solid.community/profile/card#me', 'mailto:user@example.org')
-      const rule = new AclRule([READ, WRITE, CONTROL], agents, undefined, { default: this.fileUrl, defaultForNew: this.fileUrl })
+      const rule = new AclRule([READ, WRITE, CONTROL], agents, { default: this.fileUrl, defaultForNew: this.fileUrl })
       doc.addRule(rule, null, { subjectId: `${this.aclUrl}#owner` })
 
       return doc
@@ -265,7 +265,7 @@ const samples = [
         literal('Jane')
       )
 
-      const rule = new AclRule(READ, Agents.PUBLIC, undefined, { otherQuads: [ name ] })
+      const rule = new AclRule(READ, Agents.PUBLIC, { otherQuads: [ name ] })
       doc.addRule(rule, null, { subjectId: `${this.aclUrl}#authorization2` })
       doc.addOther(givenName)
 
