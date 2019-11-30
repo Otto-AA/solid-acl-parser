@@ -1,4 +1,4 @@
-import N3 from 'n3'
+import * as N3 from 'n3'
 import AclDoc from './AclDoc'
 import prefixes from './prefixes'
 import AclRule from './AclRule'

@@ -1,4 +1,4 @@
-import N3 from 'n3'
+import * as N3 from 'n3'
 import AclDoc from '../../src/AclDoc'
 import AclRule from '../../src/AclRule'
 import Permissions from '../../src/Permissions'
