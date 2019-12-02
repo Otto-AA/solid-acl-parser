@@ -286,14 +286,21 @@ class AclDoc {
     let index = Number(digitMatches[0]) // Last positive number; 0 if not ending with number
     base = base.replace(/[\d]*$/, '')
 
-    while (this.rules.hasOwnProperty(base + index)) {
+    while (this._containsSimilarSubjectId(base + index)) {
       index++
     }
     return base + index
   }
 
+  _containsSimilarSubjectId(subjId: string) {
+    subjId = subjId.includes('#') ? subjId.substr(subjId.lastIndexOf('#')) : subjId
+    return Object.keys(this.rules)
+      .map(id => id.includes('#') ? id.substr(id.lastIndexOf('#')) : id)
+      .some(id => id === subjId)
+  }
+
   get _defaultSubjectId () {
-    return this.accessTo + '#solid-acl-parser-rule-'
+    return '#solid-acl-parser-rule-'
   }
 }
 
