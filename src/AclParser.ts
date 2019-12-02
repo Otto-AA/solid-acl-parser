@@ -39,7 +39,7 @@ const types = {
  * @alias module:AclParser
  * @example
  * // Give a user read permissions to a file
- * const fileUrl = 'https://pod.example.org/private/'
+ * const fileUrl = 'https://pod.example.org/private/file'
  * const aclUrl = 'https://pod.example.org/private/file.acl' // Retrieve this from the acl field in the Link header
  * const turtle = await solid.auth.fetch(aclUrl)
  *
@@ -59,7 +59,7 @@ class AclParser {
   private readonly accessTo: string
   
   constructor ({ fileUrl, aclUrl }: AclParserOptions) {
-    this.parser = new N3.Parser({ baseIRI: aclUrl })
+    this.parser = new N3.Parser({ baseIRI: fileUrl })
     this.accessTo = fileUrl
   }
 
