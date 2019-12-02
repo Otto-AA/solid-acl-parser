@@ -5,7 +5,7 @@ import { iterableEquals } from './utils'
  * @module Permissions
  */
 
-const permissionLinks = {
+export const permissionLinks = {
   READ: `${prefixes.acl}Read`,
   WRITE: `${prefixes.acl}Write`,
   APPEND: `${prefixes.acl}Append`,

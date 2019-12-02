@@ -1,5 +1,5 @@
 import Agents, { AgentsCastable } from './Agents'
-import Permissions, { PermissionsCastable, permissionString } from './Permissions'
+import Permissions, { PermissionsCastable, permissionString, permissionLinks } from './Permissions'
 import AclRule from './AclRule'
 import { iterableEquals } from './utils'
 import { Quad } from 'n3';
@@ -47,8 +47,9 @@ class AclDoc {
    * // addRule uses AclRule.from which means we could use following too
    * doc.addRule([READ, WRITE], 'https://my.web.id/#me')
    */
-  addRule (firstVal: AclRule|PermissionsCastable, agents?: Agents, { subjectId = this._getNewSubjectId() }: AddRuleOptions = {}) {
+  addRule (firstVal: AclRule|PermissionsCastable, agents?: Agents, { subjectId }: AddRuleOptions = {}) {
     const rule = this._ruleFromArgs(firstVal, agents)
+    subjectId = subjectId || this._getNewSubjectId(rule)
     this.rules[subjectId] = rule
 
     return this
@@ -141,7 +142,7 @@ class AclDoc {
           delete this.rules[subjectId]
 
           for (const newRule of newRules) {
-            const newSubjectId = this._getNewSubjectId(subjectId)
+            const newSubjectId = this._getNewSubjectId(newRule, subjectId)
             this.rules[newSubjectId] = newRule
           }
         }
@@ -281,7 +282,7 @@ class AclDoc {
    * @description Get an unused subject id
    * @param {string} [base] - The newly generated id will begin with this base id
    */
-  _getNewSubjectId (base = this._defaultSubjectId) {
+  _getNewSubjectId (rule: AclRule, base = this._defaultSubjectIdForRule(rule)) {
     const digitMatches = base.match(/[\d]*$/) || ['0']
     let index = Number(digitMatches[0]) // Last positive number; 0 if not ending with number
     base = base.replace(/[\d]*$/, '')
@@ -299,8 +300,15 @@ class AclDoc {
       .some(id => id === subjId)
   }
 
-  get _defaultSubjectId () {
-    return '#solid-acl-parser-rule-'
+  _defaultSubjectIdForRule (rule: AclRule) {
+    let id = '#'
+    if (rule.default || rule.defaultForNew)
+      id += 'Default'
+    id += Object.entries(permissionLinks)
+      .filter(([name, permission]) => rule.permissions.has(permission))
+      .map(([name]) => name[0] + name.substr(1).toLowerCase())
+      .join('')
+    return id + '-'
   }
 }
 
