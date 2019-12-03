@@ -302,12 +302,12 @@ class AclDoc {
 
   _defaultSubjectIdForRule (rule: AclRule) {
     let id = '#'
-    if (rule.default || rule.defaultForNew)
-      id += 'Default'
     id += Object.entries(permissionLinks)
       .filter(([name, permission]) => rule.permissions.has(permission))
       .map(([name]) => name[0] + name.substr(1).toLowerCase())
       .join('')
+    if (rule.default || rule.defaultForNew)
+      id += 'Default'
     return id + '-'
   }
 }
