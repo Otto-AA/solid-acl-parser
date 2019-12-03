@@ -49,7 +49,7 @@ class AclDoc {
    */
   addRule (firstVal: AclRule|PermissionsCastable, agents?: Agents, { subjectId }: AddRuleOptions = {}) {
     const rule = this._ruleFromArgs(firstVal, agents)
-    subjectId = subjectId || this._getNewSubjectId(rule)
+    subjectId = this._normalizedSubectId(subjectId || this._getNewSubjectId(rule))
     this.rules[subjectId] = rule
 
     return this
@@ -102,7 +102,7 @@ class AclDoc {
    * @description Get the rule with this subject id
    */
   getRuleBySubjectId (subjectId: string): AclRule|undefined {
-    return this.rules[subjectId]
+    return this.rules[this._normalizedSubectId(subjectId)]
   }
 
   /**
@@ -287,17 +287,21 @@ class AclDoc {
     let index = Number(digitMatches[0]) // Last positive number; 0 if not ending with number
     base = base.replace(/[\d]*$/, '')
 
-    while (this._containsSimilarSubjectId(base + index)) {
+    while (this._containsSubjectId(base + index)) {
       index++
     }
     return base + index
   }
 
-  _containsSimilarSubjectId(subjId: string) {
-    subjId = subjId.includes('#') ? subjId.substr(subjId.lastIndexOf('#')) : subjId
-    return Object.keys(this.rules)
-      .map(id => id.includes('#') ? id.substr(id.lastIndexOf('#')) : id)
-      .some(id => id === subjId)
+  _containsSubjectId(subjectId: string) {
+    return this.rules.hasOwnProperty(this._normalizedSubectId(subjectId))
+  }
+
+  _normalizedSubectId(subjectId: string) {
+    if (!subjectId.startsWith(this.accessTo)) {
+      return subjectId
+    }
+    return subjectId.includes('#') ? subjectId.substr(subjectId.lastIndexOf('#')) : subjectId
   }
 
   _defaultSubjectIdForRule (rule: AclRule) {
