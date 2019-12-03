@@ -3,7 +3,7 @@ import AclDoc from './AclDoc'
 import prefixes from './prefixes'
 import AclRule from './AclRule'
 import { parseTurtle, makeRelativeIfPossible } from './utils'
-import { permissionString } from './Permissions';
+import { permissionString } from './Permissions'
 
 /**
  * @module AclParser
@@ -58,13 +58,12 @@ class AclParser {
   private readonly parser: N3.N3Parser
   private readonly accessTo: string
   private readonly aclUrl: string
-  
+
   constructor ({ fileUrl, aclUrl }: AclParserOptions) {
     this.parser = new N3.Parser({ baseIRI: aclUrl })
     this.accessTo = fileUrl
     this.aclUrl = aclUrl
   }
-
 
   async turtleToAclDoc (aclTurtle: string) {
     const data = await parseTurtle(this.parser, aclTurtle)

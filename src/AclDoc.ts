@@ -2,7 +2,7 @@ import Agents, { AgentsCastable } from './Agents'
 import Permissions, { PermissionsCastable, permissionString, permissionLinks } from './Permissions'
 import AclRule from './AclRule'
 import { iterableEquals } from './utils'
-import { Quad } from 'n3';
+import { Quad } from 'n3'
 
 /**
  * @module AclDoc
@@ -26,7 +26,7 @@ class AclDoc {
   public readonly strict: boolean
   public rules: Record<string, AclRule>
   public otherQuads: Quad[]
-  
+
   constructor ({ accessTo, strict = true }: AclDocOptions) {
     this.accessTo = accessTo
     this.strict = strict
@@ -62,7 +62,7 @@ class AclDoc {
   addDefaultRule (firstVal: AclRule|PermissionsCastable, agents?: Agents, options: AddRuleOptions = {}) {
     const rule = this._ruleFromArgs(firstVal, agents)
     rule.default = this.accessTo
-    
+
     return this.addRule(rule, undefined, options)
   }
 
@@ -293,11 +293,11 @@ class AclDoc {
     return base + index
   }
 
-  _containsSubjectId(subjectId: string) {
+  _containsSubjectId (subjectId: string) {
     return this.rules.hasOwnProperty(this._normalizedSubectId(subjectId))
   }
 
-  _normalizedSubectId(subjectId: string) {
+  _normalizedSubectId (subjectId: string) {
     if (!subjectId.startsWith(this.accessTo)) {
       return subjectId
     }
@@ -310,8 +310,7 @@ class AclDoc {
       .filter(([name, permission]) => rule.permissions.has(permission))
       .map(([name]) => name[0] + name.substr(1).toLowerCase())
       .join('')
-    if (rule.default || rule.defaultForNew)
-      id += 'Default'
+    if (rule.default || rule.defaultForNew) { id += 'Default' }
     return id + '-'
   }
 }

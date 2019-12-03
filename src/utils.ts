@@ -55,18 +55,19 @@ export function parseTurtle (parser: N3Parser, turtle: string) {
   })
 }
 
-export function makeRelativeIfPossible(base: string, url: string) {
+export function makeRelativeIfPossible (base: string, url: string) {
   const urlObj = new URL(url)
   const baseObj = new URL(base)
 
-  if (urlObj.origin !== baseObj.origin)
-      return url
+  if (urlObj.origin !== baseObj.origin) {
+    return url
+  }
 
   const basePath = baseObj.pathname.endsWith('/') ? baseObj.pathname : dirname(baseObj.pathname)
   const relPath = relative(basePath, urlObj.pathname)
   const suffix = urlObj.query + urlObj.hash
 
-  return relPath.startsWith('../') ?
-    urlObj.pathname + suffix
+  return relPath.startsWith('../')
+    ? urlObj.pathname + suffix
     : `./${relPath}${suffix}`
 }
