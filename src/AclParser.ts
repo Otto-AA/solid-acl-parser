@@ -2,7 +2,7 @@ import * as N3 from 'n3'
 import AclDoc from './AclDoc'
 import prefixes from './prefixes'
 import AclRule from './AclRule'
-import { parseTurtle } from './utils'
+import { parseTurtle, makeRelativeIfPossible } from './utils'
 import { permissionString } from './Permissions';
 
 /**
@@ -57,10 +57,12 @@ const types = {
 class AclParser {
   private readonly parser: N3.N3Parser
   private readonly accessTo: string
+  private readonly aclUrl: string
   
   constructor ({ fileUrl, aclUrl }: AclParserOptions) {
     this.parser = new N3.Parser({ baseIRI: aclUrl })
     this.accessTo = fileUrl
+    this.aclUrl = aclUrl
   }
 
 
@@ -180,25 +182,27 @@ class AclParser {
   _ruleToQuads (subjectId: string, rule: AclRule) {
     const { DataFactory: { quad, namedNode } } = N3
     const quads = []
+    const relative = (url: string) => makeRelativeIfPossible(this.aclUrl, url)
 
     quads.push(quad(
       namedNode(subjectId),
       namedNode(predicates.type),
       namedNode(types.authorization)
     ))
+
     // Agents
     for (const webId of rule.agents.webIds) {
       quads.push(quad(
         namedNode(subjectId),
         namedNode(predicates.agent),
-        namedNode(webId)
+        namedNode(relative(webId))
       ))
     }
     for (const group of rule.agents.groups) {
       quads.push(quad(
         namedNode(subjectId),
         namedNode(predicates.agentGroup),
-        namedNode(group)
+        namedNode(relative(group))
       ))
     }
     if (rule.agents.public) {
@@ -215,29 +219,30 @@ class AclParser {
         namedNode(agentClasses.authenticated)
       ))
     }
-    // accessTo
+
+    // Targets
     if (rule.accessTo) {
       quads.push(quad(
         namedNode(subjectId),
         namedNode(predicates.accessTo),
-        namedNode(rule.accessTo)
+        namedNode(relative(rule.accessTo))
       ))
     }
-    // Provides default permissions for contained items?
     if (typeof rule.default !== 'undefined') {
       quads.push(quad(
         namedNode(subjectId),
         namedNode(predicates.default),
-        namedNode(rule.default)
+        namedNode(relative(rule.default))
       ))
     }
     if (typeof rule.defaultForNew !== 'undefined') {
       quads.push(quad(
         namedNode(subjectId),
         namedNode(predicates.defaultForNew),
-        namedNode(rule.defaultForNew)
+        namedNode(relative(rule.defaultForNew))
       ))
     }
+
     // Permissions
     for (const permission of rule.permissions) {
       quads.push(quad(
