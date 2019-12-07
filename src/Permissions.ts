@@ -5,12 +5,12 @@ import { iterableEquals } from './utils'
  * @module Permissions
  */
 
-const permissionLinks = {
+export const permissionLinks = {
   READ: `${prefixes.acl}Read`,
   WRITE: `${prefixes.acl}Write`,
   APPEND: `${prefixes.acl}Append`,
   CONTROL: `${prefixes.acl}Control`
-} as Record<string, permissionString> 
+} as Record<string, permissionString>
 
 export type permissionString = 'http://www.w3.org/ns/auth/acl#Read' |
   'http://www.w3.org/ns/auth/acl#Write' |

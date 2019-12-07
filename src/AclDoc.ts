@@ -1,8 +1,8 @@
 import Agents, { AgentsCastable } from './Agents'
-import Permissions, { PermissionsCastable, permissionString } from './Permissions'
+import Permissions, { PermissionsCastable, permissionString, permissionLinks } from './Permissions'
 import AclRule from './AclRule'
 import { iterableEquals } from './utils'
-import { Quad } from 'n3';
+import { Quad } from 'n3'
 
 /**
  * @module AclDoc
@@ -26,7 +26,7 @@ class AclDoc {
   public readonly strict: boolean
   public rules: Record<string, AclRule>
   public otherQuads: Quad[]
-  
+
   constructor ({ accessTo, strict = true }: AclDocOptions) {
     this.accessTo = accessTo
     this.strict = strict
@@ -47,8 +47,9 @@ class AclDoc {
    * // addRule uses AclRule.from which means we could use following too
    * doc.addRule([READ, WRITE], 'https://my.web.id/#me')
    */
-  addRule (firstVal: AclRule|PermissionsCastable, agents?: Agents, { subjectId = this._getNewSubjectId() }: AddRuleOptions = {}) {
+  addRule (firstVal: AclRule|PermissionsCastable, agents?: Agents, { subjectId }: AddRuleOptions = {}) {
     const rule = this._ruleFromArgs(firstVal, agents)
+    subjectId = this._normalizedSubectId(subjectId || this._getNewSubjectId(rule))
     this.rules[subjectId] = rule
 
     return this
@@ -61,7 +62,7 @@ class AclDoc {
   addDefaultRule (firstVal: AclRule|PermissionsCastable, agents?: Agents, options: AddRuleOptions = {}) {
     const rule = this._ruleFromArgs(firstVal, agents)
     rule.default = this.accessTo
-    
+
     return this.addRule(rule, undefined, options)
   }
 
@@ -101,7 +102,7 @@ class AclDoc {
    * @description Get the rule with this subject id
    */
   getRuleBySubjectId (subjectId: string): AclRule|undefined {
-    return this.rules[subjectId]
+    return this.rules[this._normalizedSubectId(subjectId)]
   }
 
   /**
@@ -141,7 +142,7 @@ class AclDoc {
           delete this.rules[subjectId]
 
           for (const newRule of newRules) {
-            const newSubjectId = this._getNewSubjectId(subjectId)
+            const newSubjectId = this._getNewSubjectId(newRule, subjectId)
             this.rules[newSubjectId] = newRule
           }
         }
@@ -281,19 +282,36 @@ class AclDoc {
    * @description Get an unused subject id
    * @param {string} [base] - The newly generated id will begin with this base id
    */
-  _getNewSubjectId (base = this._defaultSubjectId) {
+  _getNewSubjectId (rule: AclRule, base = this._defaultSubjectIdForRule(rule)) {
     const digitMatches = base.match(/[\d]*$/) || ['0']
     let index = Number(digitMatches[0]) // Last positive number; 0 if not ending with number
     base = base.replace(/[\d]*$/, '')
 
-    while (this.rules.hasOwnProperty(base + index)) {
+    while (this._containsSubjectId(base + index)) {
       index++
     }
     return base + index
   }
 
-  get _defaultSubjectId () {
-    return this.accessTo + '#solid-acl-parser-rule-'
+  _containsSubjectId (subjectId: string) {
+    return this.rules.hasOwnProperty(this._normalizedSubectId(subjectId))
+  }
+
+  _normalizedSubectId (subjectId: string) {
+    if (!subjectId.startsWith(this.accessTo)) {
+      return subjectId
+    }
+    return subjectId.includes('#') ? subjectId.substr(subjectId.lastIndexOf('#')) : subjectId
+  }
+
+  _defaultSubjectIdForRule (rule: AclRule) {
+    let id = '#'
+    id += Object.entries(permissionLinks)
+      .filter(([name, permission]) => rule.permissions.has(permission))
+      .map(([name]) => name[0] + name.substr(1).toLowerCase())
+      .join('')
+    if (rule.default || rule.defaultForNew) { id += 'Default' }
+    return id + '-'
   }
 }
 

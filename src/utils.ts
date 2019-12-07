@@ -1,4 +1,6 @@
 import { N3Parser, Quad } from 'n3'
+import URL from 'url-parse'
+import { relative, dirname } from 'path'
 
 type Iterable<T=any> = Array<T>|Set<T>
 
@@ -51,4 +53,21 @@ export function parseTurtle (parser: N3Parser, turtle: string) {
       data[subjectId].push(quad)
     })
   })
+}
+
+export function makeRelativeIfPossible (base: string, url: string) {
+  const urlObj = new URL(url)
+  const baseObj = new URL(base)
+
+  if (urlObj.origin !== baseObj.origin) {
+    return url
+  }
+
+  const basePath = baseObj.pathname.endsWith('/') ? baseObj.pathname : dirname(baseObj.pathname)
+  const relPath = relative(basePath, urlObj.pathname)
+  const suffix = urlObj.query + urlObj.hash
+
+  return relPath.startsWith('../')
+    ? urlObj.pathname + suffix
+    : `./${relPath}${suffix}`
 }

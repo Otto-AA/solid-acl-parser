@@ -1,7 +1,7 @@
 import { Quad } from 'n3'
 import Permissions, { PermissionsCastable } from './Permissions'
 import Agents, { AgentsCastable } from './Agents'
-import { iterableEquals, iterableIncludesIterable } from './utils'
+import { iterableEquals } from './utils'
 
 /**
  * @module AclRule
@@ -13,7 +13,6 @@ interface AclRuleOptions {
   default?: string
   defaultForNew?: string
 }
-
 
 /**
  * @description Groups together permissions, agents and other relevant information for an acl rule
@@ -58,7 +57,7 @@ class AclRule {
   equals (other: AclRule) {
     return other instanceof AclRule &&
       iterableEquals(this.otherQuads, other.otherQuads) &&
-      this.accessTo == other.accessTo &&
+      this.accessTo === other.accessTo &&
       this.permissions.equals(other.permissions) &&
       this.agents.equals(other.agents) &&
       this.default === other.default &&
@@ -105,9 +104,10 @@ class AclRule {
     const rules: AclRule[] = []
     const firstOptions = AclRule._getOptions(first)
 
-    if ((first.default && first.default !== second.default)
-        || first.accessTo !== second.accessTo)
+    if ((first.default && first.default !== second.default) ||
+        first.accessTo !== second.accessTo) {
       return [first.clone()]
+    }
 
     // Add rule for all unaffected agents
     // e.g. AclRule([READ, WRITE], ['web', 'id']) - AclRule([READ, WRITE], 'web') = AclRule([READ, WRITE], 'id')
@@ -123,7 +123,7 @@ class AclRule {
     return rules.filter(rule => !rule.hasNoEffect())
   }
 
-  static _getOptions(rule: AclRule) {
+  static _getOptions (rule: AclRule) {
     const options: AclRuleOptions = {}
     options.otherQuads = rule.otherQuads
     options.default = rule.default
