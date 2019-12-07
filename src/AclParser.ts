@@ -95,10 +95,17 @@ class AclParser {
   }
 
   _isAclRule (quads: N3.Quad[]) {
+    const requiredPredicates = [
+      [predicates.agent, predicates.agentClass, predicates.agentGroup],
+      [predicates.mode]
+    ]
+    return requiredPredicates.every(p => quads.some(({ predicate }) => p.includes(predicate.id)))
+    /* The spec currently doesn't explicitely require acl:Authorization for authorizations.
     return quads.some(({ predicate, object: { value } }) => {
       return predicate.id === predicates.type &&
         value === types.authorization
     })
+    */
   }
 
   _addQuadToRule (rule: AclRule, quad: N3.Quad) {
