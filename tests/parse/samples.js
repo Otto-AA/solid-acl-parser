@@ -61,7 +61,7 @@ const samples = [
                     acl:Write;
     acl:agentGroup  <https://alice.example.com/work-groups#Accounting>;
     acl:agentGroup  <https://alice.example.com/work-groups#Management>.`,
-    aclUrl: 'https://alice.databox.me/docs/shared-file1.acl',
+    aclUrl: 'https://alice.example.com/docs/shared-file1.acl',
     fileUrl: 'https://alice.example.com/docs/shared-file1',
     getAclDoc () {
       const doc = new AclDoc({ accessTo: this.fileUrl })

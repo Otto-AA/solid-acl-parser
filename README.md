@@ -16,14 +16,14 @@ This example demonstrates how to parse a turtle string into an AclDoc object, th
 ```javascript
 const SolidAclParser = require('SolicAclParser')
 
-const webId = 'https://solid.example.org/profile/card#me'
+const webId = 'https://pod.example.org/profile/card#me'
 const aclUrl = 'https://pod.example.org/private/file.ext.acl'
 const fileUrl = 'https://pod.example.org/private/file.ext'
 const turtle = `
 @prefix   acl:  <http://www.w3.org/ns/auth/acl#>.
 @prefix  foaf:  <http://xmlns.com/foaf/0.1/>.
 
-<#authorization2>
+<#Read-0>
     a               acl:Authorization;
     acl:agentClass  foaf:Agent;                               # everyone
     acl:mode        acl:Read;                                 # has Read-only access
@@ -52,12 +52,12 @@ Output turtle
 @prefix acl: <http://www.w3.org/ns/auth/acl#>.
 @prefix foaf: <http://xmlns.com/foaf/0.1/>.
 
-<https://pod.example.org/private/file.ext.acl#authorization2> a acl:Authorization;
+<#Read-0> a acl:Authorization;
     acl:agentClass foaf:Agent;
-    acl:accessTo <https://pod.example.org/private/file.ext>;
+    acl:accessTo <./file.ext>;
     acl:mode acl:Read.
-<solid-acl-parser-rule-0> a acl:Authorization;
-    acl:agent <https://solid.example.org/profile/card#me>;
-    acl:accessTo <https://pod.example.org/private/file.ext>;
+<#WriteControl-0> a acl:Authorization;
+    acl:agent </profile/card#me>;
+    acl:accessTo <./file.ext>;
     acl:mode acl:Write, acl:Control.
 ```
